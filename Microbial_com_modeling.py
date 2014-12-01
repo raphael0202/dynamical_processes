@@ -28,8 +28,8 @@ while np.any(r == 0.):
 # In[3]:
 
 # k: carrying capacity
-k_even = stats.beta.rvs(a=1, b=1, loc=0, scale=1, size=M) # uniform distribution
-k_uneven = stats.beta.rvs(a=1, b=1.5, loc=0, scale=1, size=M) #uneven distribution
+k_even = stats.beta.rvs(a=1, b=1, loc=0, scale=1, size=M)  # uniform distribution
+k_uneven = stats.beta.rvs(a=1, b=1.5, loc=0, scale=1, size=M)  # uneven distribution
 
 
 # In[131]:
@@ -41,11 +41,12 @@ k_uneven = 1. + k_uneven * 100
 
 # In[7]:
 
-### Interaction matrix A
+# ## Interaction matrix A
 
 ## Random Erdös-Renyi model
 
-p = 1 / (N * (N - 1))  # Probability that a link exist between two random nodes. Here, 2 interactions for each species in average
+p = 2 * 2 / (N * (N - 1))
+# Probability that a link exist between two random nodes. Here, 2 interactions for each species in average
 
 A_ER = np.zeros((N, N))
 for i in range(N):
@@ -75,7 +76,8 @@ local_comm_species = np.zeros((nb_local_com, M), dtype=int)  # Matrix representi
 # chosen for each local population
 local_comm_species[:, 0:nb_common_species] = common_species_list
 
-remaining_species = [x for x in xrange(N) if x not in common_species_list]  # List of species that have not be chosen yet
+remaining_species = [x for x in xrange(N) if
+                     x not in common_species_list]  # List of species that have not be chosen yet
 
 for comm in xrange(nb_local_com):
     local_comm_species[comm, nb_common_species:M] = random.sample(remaining_species, M - nb_common_species)
@@ -90,28 +92,28 @@ x_0 = stats.uniform.rvs(loc=10, scale=90, size=(nb_local_com, M))  # Uniform dis
 # In[21]:
 
 
-def derivative(t0, x, A, r, k):
+def derivative(x, t0, A, k, r):
     return r * x * (1 - (np.dot(A, x) / k))
 
 
 def integrate(M, x_0, A, k, r, t_start, t_end, t_step):
-  equation = ode(derivative)
-  equation.set_integrator('lsoda', nsteps=500, method='bdf')
-  equation.set_initial_value(x_0, 0)  # initial x value, initial time value
-  equation.set_f_params(A, r, k)
+    equation = ode(derivative)
+    equation.set_integrator('lsoda', nsteps=500, method='bdf')
+    equation.set_initial_value(x_0, 0)  # initial x value, initial time value
+    equation.set_f_params(A, r, k)
 
-  ts = np.zeros(t_end - t_start + 1)
-  x = np.zeros((M, t_end - t_start + 1))
-  x[:, 0] = x_0
+    ts = np.zeros(t_end - t_start + 1)
+    x = np.zeros((M, t_end - t_start + 1))
+    x[:, 0] = x_0
 
-  time_index = 1
-  while equation.successful() and equation.t < t_end:
-    equation.integrate(equation.t + t_step)
-    ts[time_index] = equation.t
-    x[:, time_index] = equation.y
-    time_index += 1
+    time_index = 1
+    while equation.successful() and equation.t < t_end:
+        equation.integrate(equation.t + t_step)
+        ts[time_index] = equation.t
+        x[:, time_index] = equation.y
+        time_index += 1
 
-  return x
+    return x
 
 
 # In[22]:
@@ -128,17 +130,17 @@ A = A[local_comm_species[0, :], :]  # We get the interaction matrix with only sp
 
 ## Alternative integration method through the ode function
 
-t_end = 200.
-t_start = 0.
-t_step = 1.
+t = np.arange(0., 500., 1.)
 
-x = np.zeros((nb_local_com, M, t_end - t_start + 1))
+x = np.zeros((nb_local_com, M, len(t)))
 
 for local_community_index in xrange(nb_local_com):
-  x[local_community_index] = integrate(M, x_0[local_community_index], A, k_even, r, t_start, t_end, t_step)
+    y = odeint(derivative, x_0[local_community_index], t, args=(A, k_even, r)).transpose()
+    x[local_community_index] = y
+    plt.plot(t, x[local_community_index].transpose())
 
 
 
-plt.plot(x[0].transpose())
+#plt.plot(x[0].transpose())
 
 
