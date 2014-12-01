@@ -12,8 +12,6 @@ import random
 
 sns.set(font="Liberation Sans")
 
-# In[2]:
-
 N = 400  # Number of distinct species
 M = 100  # number of distinct species in the local community (M < N)
 
@@ -25,27 +23,21 @@ while np.any(r == 0.):
             r[index] = stats.uniform.rvs(loc=0, scale=1)
 
 
-# In[3]:
-
 # k: carrying capacity
 k_even = stats.beta.rvs(a=1, b=1, loc=0, scale=1, size=M)  # uniform distribution
 k_uneven = stats.beta.rvs(a=1, b=1.5, loc=0, scale=1, size=M)  # uneven distribution
 
-
-# In[131]:
 
 # Scaling of carrying capacity k between 1 and 100
 k_even = 1. + k_even * 100
 k_uneven = 1. + k_uneven * 100
 
 
-# In[7]:
-
 # ## Interaction matrix A
 
 ## Random Erdös-Renyi model
 
-p = 2 * 2 / (N * (N - 1))
+p = 2 * 2 / (N * (N - 1))  # Here, average of 2 interactions per species
 # Probability that a link exist between two random nodes. Here, 2 interactions for each species in average
 
 A_ER = np.zeros((N, N))
@@ -57,8 +49,6 @@ for i in range(N):
             if random.random() <= p:
                 A_ER[i][j] = stats.uniform.rvs(loc=-1, scale=2)
 
-
-# In[9]:
 
 ## Subsampling
 # We construct 'NB_LOCAL_COMMUNITY' communities composed of 'M' species each, with the following constraint:
@@ -84,12 +74,8 @@ for comm in xrange(NB_LOCAL_COMMUNITY):
     # We sample the rest of the species for each local community
 
 
-# In[14]:
-
 # Initial abundance of species x_0
 x_0 = stats.uniform.rvs(loc=10, scale=90, size=(NB_LOCAL_COMMUNITY, M))  # Uniform distribution between 10 and 100
-
-# In[21]:
 
 
 def derivative(x, t0, A, k, r):
@@ -115,16 +101,12 @@ def steady_state(population_density, EPSILON=0.05, TIME_RANGE_PERCENT=10):
     return True
 
 
-
-### Test
 ## We extract from the A_ER matrix the A matrix corresponding only to the species present in local_comm_species[0],
 # in order to speed up computation (it avoids unnecessary calculus)
 
 
 A = A_ER[:, local_comm_species[0, :]]
 A = A[local_comm_species[0, :], :]  # We get the interaction matrix with only species present in the local population
-
-# In[23]:
 
 ## Alternative integration method through the ode function
 
@@ -136,3 +118,4 @@ for local_community_index in xrange(NB_LOCAL_COMMUNITY):
     x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A, k_even, r)).transpose()
     if not steady_state(x[local_community_index]):
         raise ValueError("One of the population has not reach a steady-value, increase the maximum time.")
+
