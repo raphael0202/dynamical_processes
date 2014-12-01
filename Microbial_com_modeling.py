@@ -4,7 +4,7 @@
 
 from __future__ import division
 import scipy.stats as stats
-from scipy.integrate import odeint, ode
+from scipy.integrate import odeint
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -61,33 +61,33 @@ for i in range(N):
 # In[9]:
 
 ## Subsampling
-# We construct 'nb_local_com' communities composed of 'M' species each, with the following constraint:
-# Each local community has to share a fraction 'frac_shared' of species with the rest of the local communities.
+# We construct 'NB_LOCAL_COMMUNITY' communities composed of 'M' species each, with the following constraint:
+# Each local community has to share a fraction 'FRACTION_SHARED' of species with the rest of the local communities.
 
-nb_local_com = 300  # Number of local communities
-frac_shared = 0.80  # fraction of species that need to be shared between each pair of local community.
-#frac_shared * nb_local_com must be an integer
-nb_common_species = int(frac_shared * M)
+NB_LOCAL_COMMUNITY = 300  # Number of local communities
+FRACTION_SHARED = 0.80  # fraction of species that need to be shared between each pair of local community.
+#FRACTION_SHARED * NB_LOCAL_COMMUNITY must be an integer
+NB_COMMON_SPECIES = int(FRACTION_SHARED * M)
 
-common_species_list = random.sample(xrange(N), nb_common_species)  # List of species that need to be shared between
-# each local community. xrange(N): list of the species, nb_common_species: number of species to be chosen
+common_species_list = random.sample(xrange(N), NB_COMMON_SPECIES)  # List of species that need to be shared between
+# each local community. xrange(N): list of the species, NB_COMMON_SPECIES: number of species to be chosen
 
-local_comm_species = np.zeros((nb_local_com, M), dtype=int)  # Matrix representing the species (in the form of integers)
+local_comm_species = np.zeros((NB_LOCAL_COMMUNITY, M), dtype=int)  # Matrix representing the species (in the form of integers)
 # chosen for each local population
-local_comm_species[:, 0:nb_common_species] = common_species_list
+local_comm_species[:, 0:NB_COMMON_SPECIES] = common_species_list
 
 remaining_species = [x for x in xrange(N) if
                      x not in common_species_list]  # List of species that have not be chosen yet
 
-for comm in xrange(nb_local_com):
-    local_comm_species[comm, nb_common_species:M] = random.sample(remaining_species, M - nb_common_species)
+for comm in xrange(NB_LOCAL_COMMUNITY):
+    local_comm_species[comm, NB_COMMON_SPECIES:M] = random.sample(remaining_species, M - NB_COMMON_SPECIES)
     # We sample the rest of the species for each local community
 
 
 # In[14]:
 
 # Initial abundance of species x_0
-x_0 = stats.uniform.rvs(loc=10, scale=90, size=(nb_local_com, M))  # Uniform distribution between 10 and 100
+x_0 = stats.uniform.rvs(loc=10, scale=90, size=(NB_LOCAL_COMMUNITY, M))  # Uniform distribution between 10 and 100
 
 # In[21]:
 
@@ -96,31 +96,29 @@ def derivative(x, t0, A, k, r):
     return r * x * (1 - (np.dot(A, x) / k))
 
 
-def integrate(M, x_0, A, k, r, t_start, t_end, t_step):
-    equation = ode(derivative)
-    equation.set_integrator('lsoda', nsteps=500, method='bdf')
-    equation.set_initial_value(x_0, 0)  # initial x value, initial time value
-    equation.set_f_params(A, r, k)
+def steady_state(population_density, EPSILON=0.05, TIME_RANGE_PERCENT=10):
+    """Check if all the populations of the community have reach a steady-state value."""
 
-    ts = np.zeros(t_end - t_start + 1)
-    x = np.zeros((M, t_end - t_start + 1))
-    x[:, 0] = x_0
+    time_range = int(population_density.shape[1] / TIME_RANGE_PERCENT)  # We select only the last timepoints for each
+    # population
+    population_density_reduced = population_density[:, -time_range:-1]
 
-    time_index = 1
-    while equation.successful() and equation.t < t_end:
-        equation.integrate(equation.t + t_step)
-        ts[time_index] = equation.t
-        x[:, time_index] = equation.y
-        time_index += 1
+    for specie in range(len(population_density)):
+        steady_state_value = population_density_reduced[specie][-1]
+        steady_state_range = steady_state_value * np.array([1 - EPSILON, 1 + EPSILON])
 
-    return x
+        if np.any(population_density_reduced[specie] < steady_state_range[0]) or np.any(population_density_reduced[specie] > steady_state_range[1]):
+            plt.plot(population_density[specie])
+            plt.show()
+            return False  # The population "specie" is not in the acceptable range of value for a steady-state
+
+    return True
 
 
-# In[22]:
 
 ### Test
 ## We extract from the A_ER matrix the A matrix corresponding only to the species present in local_comm_species[0],
-# in order to speed up computation (it avoids unecessary calculus)
+# in order to speed up computation (it avoids unnecessary calculus)
 
 
 A = A_ER[:, local_comm_species[0, :]]
@@ -132,15 +130,9 @@ A = A[local_comm_species[0, :], :]  # We get the interaction matrix with only sp
 
 t = np.arange(0., 500., 1.)
 
-x = np.zeros((nb_local_com, M, len(t)))
+x = np.zeros((NB_LOCAL_COMMUNITY, M, len(t)))
 
-for local_community_index in xrange(nb_local_com):
-    y = odeint(derivative, x_0[local_community_index], t, args=(A, k_even, r)).transpose()
-    x[local_community_index] = y
-    plt.plot(t, x[local_community_index].transpose())
-
-
-
-#plt.plot(x[0].transpose())
-
-
+for local_community_index in xrange(NB_LOCAL_COMMUNITY):
+    x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A, k_even, r)).transpose()
+    if not steady_state(x[local_community_index]):
+        raise ValueError("One of the population has not reach a steady-value, increase the maximum time.")
