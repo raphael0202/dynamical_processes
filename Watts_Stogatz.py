@@ -6,7 +6,16 @@ import random
 #--VARIABLES-----#
 
 # Nombre d'espèces :
-N = 10 
+N= 15
+# Nombre de communauté :
+N_communities = 5
+# Nombre d'espèce par communauté :
+N_species_local = 10
+# Fraction d'espèce partagée d'une communauté à l'autre :
+Fraction_shared = 0.8
+# Nombre d'espèce paratagée en fonction de la fraction définie :
+N_shared_species = int(N_species_local * Fraction_shared)
+
 
 # Vecteur des taux de croissance ]0,1] :
 R = np.random.uniform(0,1,N) 
@@ -38,4 +47,20 @@ np.random.shuffle(l)
 
 A = (np.around(np.random.uniform(-1,1,(N,N)),2) * l.reshape(N,N)) + 2*np.identity(N)
 A[A>1]=1
+
+#--ECHANTILLONAGE-----#
+
+v_shared_species = np.append(np.ones(N_shared_species),np.zeros(N - N_shared_species))
+np.random.shuffle( v_shared_species )
+i = filter(lambda x : v_shared_species[x]!=1, range(len(v_shared_species)))
+
+# Matrice des espèces présentent dans chaque communautés :
+M = np.zeros( (N_communities, N) )
+
+for com in range(N_communities) :
+	s = random.sample(i, N_species_local - N_shared_species)
+	M[com,] = v_shared_species
+	M[com,][s] = 1
+
+
 
