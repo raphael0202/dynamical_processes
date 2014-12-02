@@ -1,16 +1,18 @@
 # -*- coding: utf8 -*-
 
 import numpy as np
-import random
+import random, sys
+from scipy.integrate import odeint
+import matplotlib.pyplot as pypl
 
 #--VARIABLES-----#
 
 # Nombre d'espèces :
-N= 15
+N= 10
 # Nombre de communauté :
-N_communities = 5
+N_communities = 3
 # Nombre d'espèce par communauté :
-N_species_local = 10
+N_species_local = 5
 # Fraction d'espèce partagée d'une communauté à l'autre :
 Fraction_shared = 0.8
 # Nombre d'espèce paratagée en fonction de la fraction définie :
@@ -38,8 +40,8 @@ X = np.random.uniform(10,100,N)
 # B: 0 <= B <= 1
 # L: Nombre de liens dans le graphe
 
-K = 2
-L = N*K/2 
+k = 2
+L = N*k/2 
 
 # Matrice d'interaction :
 l = np.append(np.ones(L),np.zeros(N*N - L)) 
@@ -62,5 +64,23 @@ for com in range(N_communities) :
 	M[com,] = v_shared_species
 	M[com,][s] = 1
 
+#--DYNAMIQUE-----#
 
+def lotka_voltera(X, t, R, A, K): return R * X * (1 - (np.dot(A, X) / K))
 
+def condition_equilibre(state_past,state) : return True if  (abs(state_past - state) < 0.05).all() else False
+
+#--RESOLUTION-----#
+"""
+# Résolution différentes pour chaque communautés :
+for community in range(N_communities) :
+
+	X = X[np.where(M[community,] >0)]
+	print "M = ", M
+	print A[np.where(M[community,] >0),]
+	sys.exit()
+"""
+t = np.arange(0., 500., 1.)
+X = odeint(lotka_voltera,X, t, args=(R, A, K_uniform))
+pypl.plot(t,X)
+pypl.show()
