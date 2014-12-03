@@ -1,7 +1,5 @@
 # -*- coding: utf8 -*-
 
-# In[1]:
-
 from __future__ import division
 import scipy.stats as stats
 from scipy.integrate import odeint
@@ -9,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import random
+from math import sqrt
 
 sns.set(font="Liberation Sans")
 
@@ -54,13 +53,14 @@ for i in range(N):
 # We construct 'NB_LOCAL_COMMUNITY' communities composed of 'M' species each, with the following constraint:
 # Each local community has to share a fraction 'FRACTION_SHARED' of species with the rest of the local communities.
 
-NB_LOCAL_COMMUNITY = 300  # Number of local communities
+NB_LOCAL_COMMUNITY = 20  # Number of local communities
 FRACTION_SHARED = 0.80  # fraction of species that need to be shared between each pair of local community.
 #FRACTION_SHARED * NB_LOCAL_COMMUNITY must be an integer
 NB_COMMON_SPECIES = int(FRACTION_SHARED * M)
 
-common_species_list = random.sample(xrange(N), NB_COMMON_SPECIES)  # List of species that need to be shared between
-# each local community. xrange(N): list of the species, NB_COMMON_SPECIES: number of species to be chosen
+common_species_list = np.random.choice(N, NB_COMMON_SPECIES, replace=False)  # List of species that need to be shared
+# between each local community. xrange(N): list of the species, without repetition (replace=False).
+# NB_COMMON_SPECIES: number of species to be chosen
 
 local_comm_species = np.zeros((NB_LOCAL_COMMUNITY, M), dtype=int)  # Matrix representing the species (in the form of integers)
 # chosen for each local population
@@ -89,7 +89,7 @@ def steady_state(population_density, EPSILON=0.05, TIME_RANGE_PERCENT=10):
     # population
     population_density_reduced = population_density[:, -time_range:-1]
 
-    for specie in range(len(population_density)):
+    for specie in xrange(len(population_density)):
         steady_state_value = population_density_reduced[specie][-1]
         steady_state_range = steady_state_value * np.array([1 - EPSILON, 1 + EPSILON])
 
@@ -101,21 +101,76 @@ def steady_state(population_density, EPSILON=0.05, TIME_RANGE_PERCENT=10):
     return True
 
 
-## We extract from the A_ER matrix the A matrix corresponding only to the species present in local_comm_species[0],
-# in order to speed up computation (it avoids unnecessary calculus)
+def t_test_spearman(spearman_rho, N):
+    return spearman_rho / sqrt((1 - spearman_rho**2)/(N - 2))
 
 
-A = A_ER[:, local_comm_species[0, :]]
-A = A[local_comm_species[0, :], :]  # We get the interaction matrix with only species present in the local population
+### We extract from the A_ER matrix the A matrix corresponding only to the species present in local_comm_species[0],
+### in order to speed up computation (it avoids unnecessary calculus)
 
-## Alternative integration method through the ode function
-
-t = np.arange(0., 500., 1.)
-
+t = np.arange(0., 2000., 1.)
 x = np.zeros((NB_LOCAL_COMMUNITY, M, len(t)))
 
-for local_community_index in xrange(NB_LOCAL_COMMUNITY):
-    x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A, k_even, r)).transpose()
-    if not steady_state(x[local_community_index]):
-        raise ValueError("One of the population has not reach a steady-value, increase the maximum time.")
+# for local_community_index in xrange(NB_LOCAL_COMMUNITY):
+#
+#     # We get the interaction matrix with only species present in the local population
+#
+#     A = A_ER[:, local_comm_species[local_community_index, :]]  # First the columns
+#     A = A[local_comm_species[local_community_index, :], :]  # Then the lines
+#
+#     x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A, k_even, r)).transpose()
+#     if not steady_state(x[local_community_index]):
+#         raise ValueError("One of the population has not reach a steady-value, increase the maximum time.")
+#
+#
+# steady_state_densities = x[:, :, -1]
+# np.save("densities", steady_state_densities)
 
+steady_state_densities = np.load("densities.npy")
+
+### Computation of the correlation coefficient (Spearman rho here)
+
+couple_species = []
+p_value_spearman = np.zeros((N, N))
+NB_RESAMPLING = 1000
+
+couple_species = []  # list of all the possible couple of species present in the local communities
+local_comm_species_unique = list(set(local_comm_species.flatten()))
+
+for specie_1 in common_species_list:
+    for specie_2 in common_species_list[specie_1:]:
+        couple_species.append((specie_1, specie_2))  # We store in the couple in a set
+
+for specie_1, specie_2 in couple_species:
+
+    null_distrib_rho = np.zeros(NB_RESAMPLING * NB_LOCAL_COMMUNITY)
+
+    ## Computation of Spearman coefficient for all pairs
+
+    density_specie_1 = steady_state_densities[local_comm_species == specie_1]  # We obtain the density of specie_1
+    # for each local community in an array of length NB_LOCAL_COMMUNITY
+    density_specie_2 = steady_state_densities[local_comm_species == specie_2]
+    spearman_rho, _p_value = stats.spearmanr(density_specie_1, density_specie_2)
+
+    spy = 0
+    for resampling in xrange(NB_RESAMPLING):
+        density_random_specie = np.zeros(NB_LOCAL_COMMUNITY)
+        for local_community in xrange(NB_LOCAL_COMMUNITY):
+            random_specie = np.random.choice(M)  # We chose 1 specie among all the species present in
+            # the local community
+            density_random_specie[local_community] = steady_state_densities[local_community, random_specie]
+
+            ## Computation of the Spearman coefficient for the null distribution
+
+            null_distrib_rho[spy], _p_value = stats.spearmanr(density_specie_1, density_random_specie)
+            spy += 1
+
+    ## Computation of the p-value
+
+    p_value_spearman[specie_1, specie_2] = len(null_distrib_rho[null_distrib_rho >= spearman_rho]) / len(null_distrib_rho)
+    p_value_spearman[specie_2, specie_1] = p_value_spearman[specie_1, specie_2]
+
+    #TODO: implement the correction for multiple comparison by Benjamini and Hochberg (1995):
+    #http://statsmodels.sourceforge.net/devel/generated/statsmodels.sandbox.stats.multicomp.multipletests.html#statsmodels.sandbox.stats.multicomp.multipletests
+
+np.save("p_value", p_value_spearman)
