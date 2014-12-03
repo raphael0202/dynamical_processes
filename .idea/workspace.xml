@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="c47824fd-ab4f-4426-87e0-d47749ecb1f1" name="Default" comment="Add the computation of the spearman correlation coefficient, and of the associated p-value">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/Modeling_microbial_communities.iml" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/.idea/Presentation.iml" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/.name" afterPath="$PROJECT_DIR$/.idea/.name" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Microbial_com_modeling.py" afterPath="$PROJECT_DIR$/Microbial_com_modeling.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/modules.xml" afterPath="$PROJECT_DIR$/.idea/modules.xml" />
+    <list default="true" id="c47824fd-ab4f-4426-87e0-d47749ecb1f1" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="Presentation.iws" />
@@ -33,8 +28,8 @@
       <file leaf-file-name="Microbial_com_modeling.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Microbial_com_modeling.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.85507244" vertical-offset="2094" max-vertical-offset="2715">
-              <caret line="175" column="36" selection-start-line="175" selection-start-column="36" selection-end-line="175" selection-end-column="36" />
+            <state vertical-scroll-proportion="0.83037156" vertical-offset="2096" max-vertical-offset="2715">
+              <caret line="174" column="0" selection-start-line="174" selection-start-column="0" selection-end-line="174" selection-end-column="0" />
               <folding>
                 <element signature="e#24#55#0" expanded="true" />
               </folding>
@@ -334,7 +329,11 @@
       <created>1417423801639</created>
       <updated>1417423801639</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="Add the computation of the spearman correlation coefficient, and of the associated p-value">
+      <created>1417624170884</created>
+      <updated>1417624170884</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="TodoView" selected-index="4">
@@ -359,11 +358,12 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="65" y="24" width="1855" height="1056" extended-state="6" />
-    <editor active="false" />
+    <editor active="true" />
     <layout>
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3284974" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32953367" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32988626" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.33056995" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.15812431" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39896372" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -375,7 +375,6 @@
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32953367" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -507,8 +506,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Microbial_com_modeling.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.85507244" vertical-offset="2094" max-vertical-offset="2715">
-          <caret line="175" column="36" selection-start-line="175" selection-start-column="36" selection-end-line="175" selection-end-column="36" />
+        <state vertical-scroll-proportion="0.83037156" vertical-offset="2096" max-vertical-offset="2715">
+          <caret line="174" column="0" selection-start-line="174" selection-start-column="0" selection-end-line="174" selection-end-column="0" />
           <folding>
             <element signature="e#24#55#0" expanded="true" />
           </folding>
