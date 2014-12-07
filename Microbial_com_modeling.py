@@ -4,6 +4,7 @@ from __future__ import division
 import scipy.stats as stats
 from scipy.integrate import odeint
 import numpy as np
+import statsmodels
 import matplotlib.pyplot as plt
 import seaborn as sns
 import random
@@ -131,47 +132,50 @@ steady_state_densities = np.load("densities.npy")
 
 ### Computation of the correlation coefficient (Spearman rho here)
 
-couple_species = []
-p_value_spearman = np.zeros((N, N))
-NB_RESAMPLING = 100
+# couple_species = []
+# p_value_spearman = np.zeros((N, N))
+# NB_RESAMPLING = 100
+#
+# ## list of all the possible couple of species present in the local communities
+# couple_species = [(specie_1, specie_2) for specie_1 in common_species_list for specie_2 in common_species_list if specie_2 > specie_1]
+# local_comm_species_unique = list(set(local_comm_species.flatten()))
 
-couple_species = []  # list of all the possible couple of species present in the local communities
-local_comm_species_unique = list(set(local_comm_species.flatten()))
 
-for specie_1 in common_species_list:
-    for specie_2 in common_species_list[specie_1:]:
-        couple_species.append((specie_1, specie_2))  # We store in the couple in a set
+# for specie_1, specie_2 in couple_species:
+#
+#     null_distrib_rho = np.zeros(NB_RESAMPLING * NB_LOCAL_COMMUNITY)
+#
+#     ## Computation of Spearman coefficient for all pairs
+#
+#     density_specie_1 = steady_state_densities[local_comm_species == specie_1]  # We obtain the density of specie_1
+#     # for each local community in an array of length NB_LOCAL_COMMUNITY
+#     density_specie_2 = steady_state_densities[local_comm_species == specie_2]
+#     spearman_rho, _p_value = stats.spearmanr(density_specie_1, density_specie_2)
+#
+#     spy = 0
+#     for resampling in xrange(NB_RESAMPLING):
+#         density_random_specie = np.zeros(NB_LOCAL_COMMUNITY)
+#         for local_community in xrange(NB_LOCAL_COMMUNITY):
+#             random_specie = np.random.choice(M)  # We chose 1 specie among all the species present in
+#             # the local community
+#             density_random_specie[local_community] = steady_state_densities[local_community, random_specie]
+#
+#             ## Computation of the Spearman coefficient for the null distribution
+#
+#             null_distrib_rho[spy], _p_value = stats.spearmanr(density_specie_1, density_random_specie)
+#             spy += 1
+#
+#     ## Computation of the p-value
+#
+#     p_value_spearman[specie_1, specie_2] = len(null_distrib_rho[null_distrib_rho >= spearman_rho]) / len(null_distrib_rho)
+#
+# np.save("p_value", p_value_spearman)
 
-for specie_1, specie_2 in couple_species:
 
-    null_distrib_rho = np.zeros(NB_RESAMPLING * NB_LOCAL_COMMUNITY)
+## Correction for multiple comparison by Benjamini and Hochberg (1995):
+## http://statsmodels.sourceforge.net/devel/generated/statsmodels.sandbox.stats.multicomp.multipletests.html#statsmodels.sandbox.stats.multicomp.multipletests
 
-    ## Computation of Spearman coefficient for all pairs
-
-    density_specie_1 = steady_state_densities[local_comm_species == specie_1]  # We obtain the density of specie_1
-    # for each local community in an array of length NB_LOCAL_COMMUNITY
-    density_specie_2 = steady_state_densities[local_comm_species == specie_2]
-    spearman_rho, _p_value = stats.spearmanr(density_specie_1, density_specie_2)
-
-    spy = 0
-    for resampling in xrange(NB_RESAMPLING):
-        density_random_specie = np.zeros(NB_LOCAL_COMMUNITY)
-        for local_community in xrange(NB_LOCAL_COMMUNITY):
-            random_specie = np.random.choice(M)  # We chose 1 specie among all the species present in
-            # the local community
-            density_random_specie[local_community] = steady_state_densities[local_community, random_specie]
-
-            ## Computation of the Spearman coefficient for the null distribution
-
-            null_distrib_rho[spy], _p_value = stats.spearmanr(density_specie_1, density_random_specie)
-            spy += 1
-
-    ## Computation of the p-value
-
-    p_value_spearman[specie_1, specie_2] = len(null_distrib_rho[null_distrib_rho >= spearman_rho]) / len(null_distrib_rho)
-    p_value_spearman[specie_2, specie_1] = p_value_spearman[specie_1, specie_2]
-
-    #TODO: implement the correction for multiple comparison by Benjamini and Hochberg (1995):
-    #http://statsmodels.sourceforge.net/devel/generated/statsmodels.sandbox.stats.multicomp.multipletests.html#statsmodels.sandbox.stats.multicomp.multipletests
-
-np.save("p_value", p_value_spearman)
+p_value_spearman = np.load("p_value")
+p_value_spearman = p_value_spearman[p_value_spearman > 0]
+rejects, p_value_corrected, _alpha_1, _alpha_2 = statsmodels.sandbox.stats.multicomp.multipletests(p_value_spearman,
+                                                                                                  method="fdr_bh")
