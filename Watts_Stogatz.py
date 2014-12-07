@@ -1,26 +1,29 @@
 # -*- coding: utf8 -*-
 
 import numpy as np
-import random, sys
+import random, sys, itertools
 from scipy.integrate import odeint
+import scipy.stats as stats
 import matplotlib.pyplot as pypl
 
 #--VARIABLES-----#
 
 # Nombre d'espèces :
-N= 10
-# Nombre de communauté :
+N = 10
+# Nombre de communautés :
 N_communities = 3
 # Nombre d'espèce par communauté :
 N_species_local = 5
 # Fraction d'espèce partagée d'une communauté à l'autre :
-Fraction_shared = 0.8
-# Nombre d'espèce paratagée en fonction de la fraction définie :
-N_shared_species = int(N_species_local * Fraction_shared)
+F_shared = 0.8
+# Nombre d'espèce partagée en fonction de la fraction définie :
+N_shared_species = int(N_species_local * F_shared)
+#Nombre de ré-échantillonage :
+N_resampling = 100
 
 # Vecteur des taux de croissance ]0,1] :
 R = np.random.uniform(0,1,N) 
-while 0 in R : R = np.append( np.delete(R,np.where(R==0)) ,np.random.uniform(0,1))
+while 0 in R : R = np.append( np.delete(R,np.where(R==0)), np.random.uniform(0,1))
 
 # Vecteurs des capacités limites [1,100] :
 K_uniform   = 1 + ( np.random.beta(1,1  ,N) * 100 )
@@ -72,16 +75,52 @@ def condition_equilibre(X) : return True if  (abs(X[:,-2] - X[:,-1]) < 0.05).all
 
 # Résolutions différentes pour chaque communautés :
 
+# Matrice de densité :
+D = np.zeros((N,N_communities))
+# Dictionnaire des listes de paires d'espèce de la communauté :
+d_paires = {}
+
 for community in range(N_communities) :
 
-	X_community = X[np.where(M[community,] >0)]
+	X_community = X[np.where(M[community,] > 0)]
 	A_community = A[np.where(M[community,] > 0)][:,np.where(M[community,] > 0)[0].tolist()]
-	R_community = R[np.where(M[community,] >0)]
+	R_community = R[np.where(M[community,] > 0)]
 	K_community = K_uniform[np.where(M[community,] >0)]
+
 	t = np.arange(0., 500., 1.)
 	X_community = odeint(lotka_voltera, X_community, t, args=(R_community, A_community, K_community))
 	if not condition_equilibre(X_community.transpose()) : print "La stabilité n'est pas atteinte pour la communauté n°%s" % (community+1)
-	pypl.plot(t,X_community)
-	pypl.show()
 	
+	D[np.where(M[community,] > 0),community] = X_community.transpose()[:,-1]
+	#pypl.plot(t,X_community)
+	#pypl.show()
+
+	d_paires[community] = list(itertools.combinations( np.arange(1,N+1)[np.where(M[community,] > 0)] ,2))
+
+#### Association metrics ####
+
+# Steadman :
+#-----------
+# rho, pvalue = scipy.stats.spearmanr(x,y)
+
+# Pearson :
+#----------
+# pvalue = scipy.stats.pearsonr(x, y)
+
+# Bray-Curtis dissimilarity  :
+#-----------------------------
+#d = scipy.spatial.distance.braycurtis(x, y)
+
+# Jaccard index :
+#----------------
+"""
+def compute_jaccard_index(x, y):
+	# Avec x,y des sets
+    n = len(x.intersection(y))
+    return n / float(len(x) + len(y) - n)
+"""
+
+# Kendall coefficient :
+#----------------------
+#tau, pvalue = scipy.stats.kendalltau(x, y)
 
