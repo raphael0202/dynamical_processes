@@ -170,9 +170,6 @@ for specie_1, specie_2 in couple_species:
 
 np.save("p_value", p_value_spearman)
 
-np.save("p_value", p_value_spearman)
-
-
 ## Correction for multiple comparison by Benjamini and Hochberg (1995):
 ## http://statsmodels.sourceforge.net/devel/generated/statsmodels.sandbox.stats.multicomp.multipletests.html#statsmodels.sandbox.stats.multicomp.multipletests
 
@@ -180,3 +177,4 @@ p_value_spearman = np.load("p_value")
 p_value_spearman = p_value_spearman[p_value_spearman > 0]
 rejects, p_value_corrected, _alpha_1, _alpha_2 = statsmodels.sandbox.stats.multicomp.multipletests(p_value_spearman,
                                                                                                   method="fdr_bh")
+
