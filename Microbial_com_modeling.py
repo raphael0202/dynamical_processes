@@ -4,6 +4,7 @@ from __future__ import division
 import scipy.stats as stats
 from scipy.integrate import odeint
 import numpy as np
+import statsmodels
 import matplotlib.pyplot as plt
 import seaborn as sns
 import random
@@ -131,16 +132,13 @@ steady_state_densities = np.load("densities.npy")
 
 ### Computation of the correlation coefficient (Spearman rho here)
 
-couple_species = []
 p_value_spearman = np.zeros((N, N))
 NB_RESAMPLING = 100
 
-couple_species = []  # list of all the possible couple of species present in the local communities
+## list of all the possible couple of species present in the local communities
+couple_species = [(specie_1, specie_2) for specie_1 in common_species_list for specie_2 in common_species_list if specie_2 > specie_1]
 local_comm_species_unique = list(set(local_comm_species.flatten()))
 
-for specie_1 in common_species_list:
-    for specie_2 in common_species_list[specie_1:]:
-        couple_species.append((specie_1, specie_2))  # We store in the couple in a set
 
 for specie_1, specie_2 in couple_species:
 
@@ -169,9 +167,16 @@ for specie_1, specie_2 in couple_species:
     ## Computation of the p-value
 
     p_value_spearman[specie_1, specie_2] = len(null_distrib_rho[null_distrib_rho >= spearman_rho]) / len(null_distrib_rho)
-    p_value_spearman[specie_2, specie_1] = p_value_spearman[specie_1, specie_2]
-
-    #TODO: implement the correction for multiple comparison by Benjamini and Hochberg (1995):
-    #http://statsmodels.sourceforge.net/devel/generated/statsmodels.sandbox.stats.multicomp.multipletests.html#statsmodels.sandbox.stats.multicomp.multipletests
 
 np.save("p_value", p_value_spearman)
+
+np.save("p_value", p_value_spearman)
+
+
+## Correction for multiple comparison by Benjamini and Hochberg (1995):
+## http://statsmodels.sourceforge.net/devel/generated/statsmodels.sandbox.stats.multicomp.multipletests.html#statsmodels.sandbox.stats.multicomp.multipletests
+
+p_value_spearman = np.load("p_value")
+p_value_spearman = p_value_spearman[p_value_spearman > 0]
+rejects, p_value_corrected, _alpha_1, _alpha_2 = statsmodels.sandbox.stats.multicomp.multipletests(p_value_spearman,
+                                                                                                  method="fdr_bh")
