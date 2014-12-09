@@ -103,11 +103,11 @@ for pair in C :
 	rho, pvalue = stats.spearmanr( density_spec1 , density_spec2 )
 
 	# Resampling :
-	rho_null = []
+	rho_null = np.zeros(N_resampling)
 	for i in xrange(N_resampling) : 
 		random.shuffle(density_spec1)
-		rho_null.append( stats.spearmanr(density_spec1 , density_spec2)[0] )
-	pvalue = rho_null.count(rho) / float(N_resampling)
+		rho_null[i] = stats.spearmanr(density_spec1 , density_spec2)[0]
+	pvalue = len(rho_null[np.where(rho_null >= rho)]) / float(N_resampling) ##
 	dCCpval[pair] = (rho,pvalue)
 
 print dCCpval
