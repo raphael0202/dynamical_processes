@@ -84,13 +84,15 @@ def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A
     return steady_state_densities
 
 
-def p_value_spearman(steady_state_densities, common_species_list, nb_local_community, nb_resampling=1000):
+def p_value_spearman(steady_state_densities, common_species_list, number_species, nb_local_community, nb_resampling=1000):
 
     ## list of all the possible couple of species present in the local communities
     couple_species = [(specie_1, specie_2) for specie_1 in common_species_list
                       for specie_2 in common_species_list if specie_2 > specie_1]
 
     p_value_spearman = np.zeros(len(couple_species))
+    p_value_spearman_corrected = np.zeros((N, N))
+    spearman_rho = np.zeros((N, N))
 
     for index, (specie_1, specie_2) in enumerate(couple_species):
 
@@ -101,35 +103,30 @@ def p_value_spearman(steady_state_densities, common_species_list, nb_local_commu
         density_specie_1 = steady_state_densities[local_comm_species == specie_1]  # We obtain the density of specie_1
         # for each local community in an array of length nb_local_community
         density_specie_2 = steady_state_densities[local_comm_species == specie_2]
-        spearman_rho, _p_value = stats.spearmanr(density_specie_1, density_specie_2)
+        rho, _p_value = stats.spearmanr(density_specie_1, density_specie_2)
 
-        spy = 0
+        spearman_rho[specie_1, specie_2] = rho
 
         for resampling in xrange(nb_resampling):
             np.random.shuffle(density_specie_1)
             ## Computation of the Spearman coefficient for the null distribution
-            null_distrib_rho[spy], _p_value = stats.spearmanr(density_specie_1, density_specie_2)
-            spy += 1
+            null_distrib_rho[resampling], _p_value = stats.spearmanr(density_specie_1, density_specie_2)
 
         ## Computation of the p-value
 
-        p_value_spearman[index] = len(null_distrib_rho[null_distrib_rho >= spearman_rho]) / len(null_distrib_rho)
+        p_value_spearman[index] = len(null_distrib_rho[null_distrib_rho >= rho]) / len(null_distrib_rho)
 
         ## Correction for multiple comparison by Benjamini and Hochberg (1995):
         ## http://statsmodels.sourceforge.net/devel/generated/statsmodels.sandbox.stats.multicomp.multipletests.html
         # #statsmodels.sandbox.stats.multicomp.multipletests
 
     ## Computation of the correction for multiple comparison
-    rejects, p_value_corrected,\
-    _alpha_1, _alpha_2 = statsmodels.sandbox.stats.multicomp.multipletests(p_value_spearman, method="fdr_bh")
-
-    p_value_spearman_corrected = np.zeros((N, N))
+    rejects, p_value_corrected, _alpha_1, _alpha_2 = statsmodels.sandbox.stats.multicomp.multipletests(p_value_spearman, method="fdr_bh")
 
     for index, (specie_1, specie_2) in enumerate(couple_species):
         p_value_spearman_corrected[specie_1, specie_2] = p_value_spearman[index]
-        p_value_spearman_corrected[specie_2, specie_1] = p_value_spearman[index]
 
-    return p_value_spearman_corrected
+    return p_value_spearman_corrected, spearman_rho
 
 
 N = 40  # Number of distinct species
@@ -168,13 +165,16 @@ local_comm_species, common_species_list = subsample_local_pop(N, NB_LOCAL_COMMUN
 
 # Initial abundance of species x_0
 x_0 = stats.uniform.rvs(loc=10, scale=90, size=(NB_LOCAL_COMMUNITY, M))  # Uniform distribution between 10 and 100
-steady_state_densities = get_steady_state_densities(NB_LOCAL_COMMUNITY, M, local_comm_species, x_0, A_ER, k_even, r, t_max=2000., t_min=0, ts=1.)
+steady_state_densities = get_steady_state_densities(NB_LOCAL_COMMUNITY, M, local_comm_species, x_0, A_ER, k_even, r,
+                                                    t_max=3000., t_min=0, ts=1.)
 
 
 ### Computation of the correlation coefficient (Spearman rho here)
 
-p_value_spearman = p_value_spearman(steady_state_densities, common_species_list, NB_LOCAL_COMMUNITY)
-plt.imshow(p_value_spearman)
-plt.show()
+p_value_spearman, spearman_rho = p_value_spearman(steady_state_densities, common_species_list, N, NB_LOCAL_COMMUNITY)
 #np.save("p_value", p_value_spearman)
 #p_value_spearman = np.load("p_value.npy")
+plt.imshow(p_value_spearman)
+plt.show()
+plt.imshow(spearman_rho)
+plt.show()
