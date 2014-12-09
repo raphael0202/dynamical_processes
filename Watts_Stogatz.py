@@ -5,6 +5,7 @@ import random, sys, itertools
 from scipy.integrate import odeint
 import scipy.stats as stats
 import matplotlib.pyplot as pypl
+from network import *
 
 #--VARIABLES-----#
 
@@ -19,7 +20,7 @@ F_shared = 0.8
 # Nombre d'espèce partagée en fonction de la fraction définie :
 N_shared_species = int(N_species_local * F_shared)
 #Nombre de ré-échantillonage :
-N_resampling = 100
+N_resampling = 1000
 
 # Vecteur des taux de croissance ]0,1] :
 R = np.random.uniform(0,1,N) 
@@ -42,45 +43,39 @@ X = np.random.uniform(10,100,N)
 # B: 0 <= B <= 1
 # L: Nombre de liens dans le graphe
 
-k = 2
-L = N*k/2 
+k = int(0.2 * N )
+p = 0.2
+G = WS(N,k,p)
 
 # Matrice d'interaction :
-l = np.append(np.ones(L),np.zeros(N*N - L)) 
-np.random.shuffle(l)
-
-A = (np.around(np.random.uniform(-1,1,(N,N)),2) * l.reshape(N,N)) + 2*np.identity(N)
-A[A>1]=1
+A = np.multiply( G.adjacency_matrix() , np.around(np.random.uniform(-1,1,(N,N)),2) )
+np.fill_diagonal(A, 1)
 
 #--ECHANTILLONAGE-----#
 
 v_shared_species = np.append(np.ones(N_shared_species),np.zeros(N - N_shared_species))
 np.random.shuffle( v_shared_species )
-i = filter(lambda x : v_shared_species[x]!=1, range(len(v_shared_species)))
+i = filter(lambda x : v_shared_species[x]!=1, xrange(len(v_shared_species)))
 
 # Matrice des espèces présentent dans chaque communautés :
 M = np.zeros( (N_communities, N) )
-for community in range(N_communities) :
+for community in xrange(N_communities) :
 	s = random.sample(i, N_species_local - N_shared_species)
 	M[community,] = v_shared_species
 	M[community,][s] = 1
 
 #--DYNAMIQUE-----#
 
-def lotka_voltera(X, t, R, A, K): return R * X * (1 - (np.dot(A,X) / K))
+def lotka_voltera(X, t, R, A, K): return R * X *  (1 - (np.squeeze(np.asarray(np.dot(A,X)) / K)))
 
 def condition_equilibre(X) : return True if  (abs(X[:,-2] - X[:,-1]) < 0.05).all() else False
 
 #--RESOLUTION-----#
 
-# Résolutions différentes pour chaque communautés :
-
 # Matrice de densité :
 D = np.zeros((N,N_communities))
-# Dictionnaire des listes de paires d'espèce de la communauté :
-d_paires = {}
 
-for community in range(N_communities) :
+for community in xrange(N_communities) :
 
 	X_community = X[np.where(M[community,] > 0)]
 	A_community = A[np.where(M[community,] > 0)][:,np.where(M[community,] > 0)[0].tolist()]
@@ -92,10 +87,40 @@ for community in range(N_communities) :
 	if not condition_equilibre(X_community.transpose()) : print "La stabilité n'est pas atteinte pour la communauté n°%s" % (community+1)
 	
 	D[np.where(M[community,] > 0),community] = X_community.transpose()[:,-1]
-	#pypl.plot(t,X_community)
-	#pypl.show()
+	pypl.plot(t,X_community)
+	pypl.show()
 
-	d_paires[community] = list(itertools.combinations( np.arange(1,N+1)[np.where(M[community,] > 0)] ,2))
+#--CO-OCCURENCE-----#
+
+# Couples d'espèces :
+C = list(itertools.combinations( np.arange(N)[np.where(v_shared_species > 0)] ,2))
+
+# Coefficient de corrélation et pvalue par pair d'espèces :
+dCCpval = {}
+
+for pair in C :
+	density_spec1 , density_spec2 = D[pair[0]], D[pair[1]]
+	rho, pvalue = stats.spearmanr( density_spec1 , density_spec2 )
+
+	# Resampling :
+	rho_null = []
+	for i in xrange(N_resampling) : 
+		random.shuffle(density_spec1)
+		rho_null.append( stats.spearmanr(density_spec1 , density_spec2)[0] )
+	pvalue = rho_null.count(rho) / float(N_resampling)
+	dCCpval[pair] = (rho,pvalue)
+
+print dCCpval
+
+
+
+
+
+
+
+
+
+
 
 #### Association metrics ####
 
