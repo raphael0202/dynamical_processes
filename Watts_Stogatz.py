@@ -6,21 +6,24 @@ from scipy.integrate import odeint
 import scipy.stats as stats
 import matplotlib.pyplot as pypl
 from network import *
+from conetwork import *
 
 #--VARIABLES-----#
 
 # Nombre d'espèces :
-N = 10
+N = 20
 # Nombre de communautés :
-N_communities = 3
+N_communities = 10
 # Nombre d'espèce par communauté :
-N_species_local = 5
+N_species_local = 20
 # Fraction d'espèce partagée d'une communauté à l'autre :
 F_shared = 0.8
 # Nombre d'espèce partagée en fonction de la fraction définie :
 N_shared_species = int(N_species_local * F_shared)
 #Nombre de ré-échantillonage :
-N_resampling = 1000
+N_resampling = 100
+# Seuil de significativité :
+alpha = 0.05
 
 # Vecteur des taux de croissance ]0,1] :
 R = np.random.uniform(0,1,N) 
@@ -44,12 +47,15 @@ X = np.random.uniform(10,100,N)
 # L: Nombre de liens dans le graphe
 
 k = int(0.2 * N )
-p = 0.2
+p = 0.1
 G = WS(N,k,p)
 
 # Matrice d'interaction :
 A = np.multiply( G.adjacency_matrix() , np.around(np.random.uniform(-1,1,(N,N)),2) )
 np.fill_diagonal(A, 1)
+
+# Affiche le graphe :
+#G.show()
 
 #--ECHANTILLONAGE-----#
 
@@ -72,6 +78,7 @@ def condition_equilibre(X) : return True if  (abs(X[:,-2] - X[:,-1]) < 0.05).all
 
 #--RESOLUTION-----#
 
+print "# RESOLUTION"
 # Matrice de densité :
 D = np.zeros((N,N_communities))
 
@@ -87,17 +94,18 @@ for community in xrange(N_communities) :
 	if not condition_equilibre(X_community.transpose()) : print "La stabilité n'est pas atteinte pour la communauté n°%s" % (community+1)
 	
 	D[np.where(M[community,] > 0),community] = X_community.transpose()[:,-1]
-	pypl.plot(t,X_community)
-	pypl.show()
+	#pypl.plot(t,X_community)
+	#pypl.show()
 
 #--CO-OCCURENCE-----#
 
+print "# CO-OCCURENCE"
 # Couples d'espèces :
 C = list(itertools.combinations( np.arange(N)[np.where(v_shared_species > 0)] ,2))
+# Matrice du réseau de co-occurence :
+Mcc = Acc = np.zeros((N,N))
 
-# Coefficient de corrélation et pvalue par pair d'espèces :
-dCCpval = {}
-
+print "## Resampling"
 for pair in C :
 	density_spec1 , density_spec2 = D[pair[0]], D[pair[1]]
 	rho, pvalue = stats.spearmanr( density_spec1 , density_spec2 )
@@ -108,9 +116,16 @@ for pair in C :
 		random.shuffle(density_spec1)
 		rho_null[i] = stats.spearmanr(density_spec1 , density_spec2)[0]
 	pvalue = len(rho_null[np.where(rho_null >= rho)]) / float(N_resampling) ##
-	dCCpval[pair] = (rho,pvalue)
+	if pvalue <= alpha : Mcc[pair[0],pair[1]] = Mcc[pair[1],pair[0]] = rho
 
-print dCCpval
+print "# GRAPHE CO-OCCURENCE"
+# Graphe de co-occurence :
+Acc[Mcc != 0 ] = 1
+print "Acc = \n", Acc
+Gcc = CoNet(Acc)
+#Gcc.show()
+
+
 
 
 
