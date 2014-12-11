@@ -6,8 +6,8 @@ from Microbial_com_modeling import *
 
 old_settings = np.seterr(all='raise')
 
-N = 40  # Number of distinct species
-M = 20  # number of distinct species in the local community (M < N)
+N = 400  # Number of distinct species
+M = 100  # number of distinct species in the local community (M < N)
 
 r = stats.uniform.rvs(loc=0, scale=1, size=M)  # growth rate, uniform distribution between 0 and 1, vector of size M
 while np.any(r == 0.):
@@ -32,7 +32,7 @@ p = 2 / (N - 1)  # Here, average of 2 interactions per species
 
 A_ER = graph.generate_random_graph(N, p)
 
-NB_LOCAL_COMMUNITY = 10  # Number of local communities
+NB_LOCAL_COMMUNITY = 100  # Number of local communities
 FRACTION_SHARED = 0.80  # fraction of species that need to be shared between each pair of local community.
 #FRACTION_SHARED * NB_LOCAL_COMMUNITY must be an integer
 NB_COMMON_SPECIES = int(FRACTION_SHARED * M)
@@ -78,6 +78,10 @@ A_refactored = np.copy(A_ER)
 A_refactored[:, non_common] = 0.
 A_refactored[non_common, :] = 0.
 
+
+# We keep from the interaction matrix only the strongest interaction coefficient if two species both interact with
+# each other, and we make the matrix symmetric
+
 for i in xrange(N):
     for j in xrange(i+1, N):
         if A_refactored[i, j] != A_refactored[j, i]:
@@ -87,19 +91,11 @@ for i in xrange(N):
                 A_refactored[j, i] = A_refactored[i, j]
 
 
-nb_false_pos = 0
-nb_false_neg = 0
-nb_true_pos = 0
-nb_tru_neg = 0
+nb_true_pos, nb_true_neg, nb_false_pos, nb_false_neg = sensibility_sensitivity_analysis(co_occurrence_matrix, A_ER)
 
-# for i in xrange(N):
-#     for j in xrange(i+1, N):
-#         if A_refactored[i, j] > 0.:
-#             if co_occurrence_matrix[i, j] > 0.:
-#                 nb_true_pos += 1
-#             elif co_occurrence_matrix[i, j] < 0.:
-#                 nb_false_neg += 1
+prompt = "Number of true positive: {}\nTrue negative: {}\nFalse positive: {}\nFalse negative: {}"
 
+print(prompt.format(nb_true_pos, nb_true_neg, nb_false_pos, nb_false_neg))
 
 np.save("co_occurence_matrix", co_occurrence_matrix)
 

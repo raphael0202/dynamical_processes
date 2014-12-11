@@ -1,0 +1,16 @@
+.reveal {
+  color: #484848;
+}
+
+.reveal h1 {
+  font-size: 2.5em;
+}
+
+.reveal h3 {
+  font-size: 1.5em
+}
+
+.reveal .background_alpha {
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 10px 10px 10px 10px;
+}

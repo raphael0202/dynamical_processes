@@ -7,10 +7,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import statsmodels
-# import seaborn as sns
+import seaborn as sns
 
-# sns.set(font="Liberation Sans")
-# sns.set_style("white")
+sns.set_style("white")
+sns.set(font="Liberation Sans")
 
 
 def subsample_local_pop(total_nb_species, nb_species, nb_local_community, nb_common_species):
@@ -84,8 +84,6 @@ def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A
 def p_value_spearman(steady_state_densities, couple_species, total_nb_species, local_comm_species,
                      nb_resampling=1000):
 
-    print(statsmodels.__path__)
-
     p_value_spearman = np.zeros(len(couple_species))
     p_value_spearman_corrected = np.zeros((total_nb_species, total_nb_species))
     spearman_rho = np.zeros((total_nb_species, total_nb_species))
@@ -131,3 +129,36 @@ def p_value_spearman(steady_state_densities, couple_species, total_nb_species, l
         p_value_spearman_corrected[specie_2, specie_1] = p_value_corrected[index]
 
     return p_value_spearman_corrected, spearman_rho
+
+
+def sensibility_sensitivity_analysis(co_occurrence_matrix, A):
+    nb_false_pos = 0
+    nb_false_neg = 0
+    nb_true_pos = 0
+    nb_true_neg = 0
+
+    N = co_occurrence_matrix.shape[0]
+
+    for i in xrange(N):
+        for j in xrange(i+1, N):
+            if A[i, j] > 0.:
+                if co_occurrence_matrix[i, j] > 0.:
+                    nb_true_pos += 1
+                elif co_occurrence_matrix[i, j] == 0.:
+                    nb_false_neg += 1
+
+            elif A[i, j] < 0.:
+                if co_occurrence_matrix[i, j] < 0.:
+                    nb_true_pos += 1
+                elif co_occurrence_matrix[i, j] == 0.:
+                    nb_false_neg += 1
+
+            elif A[i, j] == 0.:
+                if co_occurrence_matrix[i, j] == 0.:
+                    nb_true_neg += 1
+                elif co_occurrence_matrix[i, j] != 0.:
+                    nb_false_pos += 1
+            else:
+                raise ValueError
+
+    return nb_true_pos, nb_true_neg, nb_false_pos, nb_false_neg
