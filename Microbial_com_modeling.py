@@ -81,12 +81,11 @@ def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A
     return steady_state_densities
 
 
-def p_value_spearman(steady_state_densities, couple_species, total_nb_species, local_comm_species,
-                     nb_resampling=1000):
+def p_value_spearman(steady_state_densities, couple_species, local_comm_species, nb_resampling=1000):
+    print("function: {}".format(couple_species[0:3]))
 
     p_value_spearman = np.zeros(len(couple_species))
-    p_value_spearman_corrected = np.zeros((total_nb_species, total_nb_species))
-    spearman_rho = np.zeros((total_nb_species, total_nb_species))
+    spearman_rho = np.zeros(len(couple_species))
 
     for index, (specie_1, specie_2) in enumerate(couple_species):
         print(index)
@@ -96,11 +95,8 @@ def p_value_spearman(steady_state_densities, couple_species, total_nb_species, l
         density_specie_1 = steady_state_densities[local_comm_species == specie_1]  # We obtain the density of specie_1
         # for each local community in an array of length nb_local_community
         density_specie_2 = steady_state_densities[local_comm_species == specie_2]
-
         rho, _p_value = stats.spearmanr(density_specie_1, density_specie_2)
-
-        spearman_rho[specie_1, specie_2] = rho
-        spearman_rho[specie_2, specie_1] = rho
+        spearman_rho[index] = rho
 
         null_distrib_rho = np.zeros(nb_resampling)
 
@@ -120,18 +116,27 @@ def p_value_spearman(steady_state_densities, couple_species, total_nb_species, l
         ## http://statsmodels.sourceforge.net/devel/generated/statsmodels.sandbox.stats.multicomp.multipletests.html
         # #statsmodels.sandbox.stats.multicomp.multipletests
 
-    ## Computation of the correction for multiple comparison
-    rejects, p_value_corrected, _alpha_1, _alpha_2 = statsmodels.sandbox.stats.multicomp.multipletests(p_value_spearman,
-                                                                                                       method="fdr_bh")
+    return p_value_spearman, spearman_rho
+
+
+def fill_matrices(p_value, rho, couple_species, total_nb_species):
+
+    p_value_corrected = np.zeros((total_nb_species, total_nb_species))
+    spearman_rho_matrix = np.zeros((total_nb_species, total_nb_species))
 
     for index, (specie_1, specie_2) in enumerate(couple_species):
-        p_value_spearman_corrected[specie_1, specie_2] = p_value_corrected[index]
-        p_value_spearman_corrected[specie_2, specie_1] = p_value_corrected[index]
 
-    return p_value_spearman_corrected, spearman_rho
+        p_value_corrected[specie_1, specie_2] = p_value[index]
+        p_value_corrected[specie_2, specie_1] = p_value[index]
+
+        spearman_rho_matrix[specie_1, specie_2] = rho[index]
+        spearman_rho_matrix[specie_2, specie_1] = rho[index]
+
+    return p_value_corrected, spearman_rho_matrix
 
 
 def sensibility_sensitivity_analysis(co_occurrence_matrix, A):
+
     nb_false_pos = 0
     nb_false_neg = 0
     nb_true_pos = 0
@@ -142,13 +147,13 @@ def sensibility_sensitivity_analysis(co_occurrence_matrix, A):
     for i in xrange(N):
         for j in xrange(i+1, N):
             if A[i, j] > 0.:
-                if co_occurrence_matrix[i, j] > 0.:
+                if co_occurrence_matrix[i, j] != 0.:
                     nb_true_pos += 1
                 elif co_occurrence_matrix[i, j] == 0.:
                     nb_false_neg += 1
 
             elif A[i, j] < 0.:
-                if co_occurrence_matrix[i, j] < 0.:
+                if co_occurrence_matrix[i, j] != 0.:
                     nb_true_pos += 1
                 elif co_occurrence_matrix[i, j] == 0.:
                     nb_false_neg += 1
