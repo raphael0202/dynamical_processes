@@ -10,12 +10,12 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="900"
+   width="1100"
    height="300"
    id="svg5359"
    version="1.1"
    inkscape:version="0.48.3.1 r9886"
-   sodipodi:docname="Nouveau document 5">
+   sodipodi:docname="im1.svg">
   <defs
      id="defs5361">
     <marker
@@ -83,7 +83,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.35"
-     inkscape:cx="-83.571429"
+     inkscape:cx="-98.408061"
      inkscape:cy="520"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
@@ -101,7 +101,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -112,7 +112,7 @@
      transform="translate(0,-752.36218)">
     <g
        id="g5554"
-       transform="translate(-4.2857164,738.57142)">
+       transform="translate(178.35905,738.57142)">
       <g
          ns0:preamble=""
          ns0:text="$$ \\frac{dx_i}{dt} = r_i x_i \\left( 1 - \\frac{Ax}{K_i} \\right) $$"
@@ -407,7 +407,7 @@
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;letter-spacing:normal;word-spacing:normal;text-anchor:start;fill:none;stroke:#000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10.43299961;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0">
 <polygon
    id="polygon6810"
-   points="223.65,714.58 223.65,714.18 224.62,714.18 224.62,705.04 223.65,705.04 223.65,704.64 225.01,704.64 225.01,714.58 "
+   points="223.65,705.04 223.65,704.64 225.01,704.64 225.01,714.58 223.65,714.58 223.65,714.18 224.62,714.18 224.62,705.04 "
    style="fill:#000000;stroke-width:0" />
 <path
    id="path6812"
@@ -426,7 +426,7 @@
    style="fill:#000000;stroke-width:0" />
 <polygon
    id="polygon6818"
-   points="240.81,714.58 240.81,714.18 241.77,714.18 241.77,705.04 240.81,705.04 240.81,704.64 242.17,704.64 242.17,714.58 "
+   points="240.81,705.04 240.81,704.64 242.17,704.64 242.17,714.58 240.81,714.58 240.81,714.18 241.77,714.18 241.77,705.04 "
    style="fill:#000000;stroke-width:0" />
 </g>      <g
          style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;letter-spacing:normal;word-spacing:normal;text-anchor:start;fill:none;stroke:#000000;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10.43299961;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0"
