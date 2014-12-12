@@ -82,7 +82,6 @@ def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A
 
 
 def p_value_spearman(steady_state_densities, couple_species, local_comm_species, nb_resampling=1000):
-    print("function: {}".format(couple_species[0:3]))
 
     p_value_spearman = np.zeros(len(couple_species))
     spearman_rho = np.zeros(len(couple_species))
@@ -147,13 +146,13 @@ def sensibility_sensitivity_analysis(co_occurrence_matrix, A):
     for i in xrange(N):
         for j in xrange(i+1, N):
             if A[i, j] > 0.:
-                if co_occurrence_matrix[i, j] != 0.:
+                if co_occurrence_matrix[i, j] < 0.:
                     nb_true_pos += 1
                 elif co_occurrence_matrix[i, j] == 0.:
                     nb_false_neg += 1
 
             elif A[i, j] < 0.:
-                if co_occurrence_matrix[i, j] != 0.:
+                if co_occurrence_matrix[i, j] > 0.:
                     nb_true_pos += 1
                 elif co_occurrence_matrix[i, j] == 0.:
                     nb_false_neg += 1
