@@ -110,7 +110,7 @@ def cprint(label) :
 
 print "# CO-OCCURENCE"
 # Couples d'espèces :
-C = list(itertools.combinations( np.arange(N)[np.where(v_shared_species > 0)] ,2))
+C = list(itertools.combinations(np.arange(N)[np.where(v_shared_species > 0)], 2))
 # Matrice du réseau de co-occurence :
 Mcc = Acc = np.zeros((N,N))
 
