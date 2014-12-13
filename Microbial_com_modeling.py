@@ -4,10 +4,10 @@ from __future__ import division
 import scipy.stats as stats
 from scipy.integrate import odeint
 import numpy as np
-import matplotlib.pyplot as plt
 import random
-import statsmodels
 import seaborn as sns
+import statsmodels
+import logging
 
 sns.set_style("white")
 sns.set(font="Liberation Sans")
@@ -53,14 +53,13 @@ def steady_state_check(population_density, epsilon=0.5, time_range_percent=10):
         steady_state_range = np.array([steady_state_value - epsilon, steady_state_value + epsilon])
 
         if np.any(population_density_reduced[specie] < steady_state_range[0]) or np.any(population_density_reduced[specie] > steady_state_range[1]):
-            plt.plot(population_density[specie])
-            plt.show()
             return False  # The population "specie" is not in the acceptable range of value for a steady-state
 
     return True
 
 
-def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A_ER, k_even, r, t_max=2000., t_min=0, ts=1.):
+def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A,
+                               k_even, r, t_max=2000., t_min=0, ts=1., mxstep=1000):
 
     t = np.arange(t_min, t_max, ts)
     x = np.zeros((nb_local_community, M, len(t)))
@@ -69,10 +68,12 @@ def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A
 
         # We get the interaction matrix with only species present in the local population
 
-        A = A_ER[:, local_comm_species[local_community_index, :]]  # First the columns
+        A = A[:, local_comm_species[local_community_index, :]]  # First the columns
         A = A[local_comm_species[local_community_index, :], :]  # Then the lines
 
-        x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A, k_even, r)).transpose()
+        x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A, k_even, r),
+                                          mxstep=mxstep).transpose()
+
         if not steady_state_check(x[local_community_index]):
             raise ValueError("One of the population has not reach a steady-value, increase the maximum time.")
 
@@ -87,7 +88,7 @@ def p_value_spearman(steady_state_densities, couple_species, local_comm_species,
     spearman_rho = np.zeros(len(couple_species))
 
     for index, (specie_1, specie_2) in enumerate(couple_species):
-        print(index)
+        logging.debug("{}/{}".format(index, len(couple_species)))
 
         ## Computation of Spearman coefficient for all pairs
 

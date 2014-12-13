@@ -9,9 +9,16 @@ import scipy.stats as stats
 import matplotlib.pyplot as plt
 import statsmodels
 import multiprocessing as mp
+import time
+import logging
+from utils import start_logging, save_json
 import seaborn as sns
 
+logger = start_logging()
+
 old_settings = np.seterr(all='raise')
+
+start_time = time.time()
 
 N = 200  # Number of distinct species
 M = 100  # number of distinct species in the local community (M < N)
@@ -39,7 +46,7 @@ p = 2 / (N - 1)  # Here, average of 2 interactions per species
 
 A_ER = graph.generate_random_graph(N, p)
 
-NB_LOCAL_COMMUNITY = 250  # Number of local communities
+NB_LOCAL_COMMUNITY = 100  # Number of local communities
 FRACTION_SHARED = 0.80  # fraction of species that need to be shared between each pair of local community.
 NB_COMMON_SPECIES = int(FRACTION_SHARED * M)
 
@@ -58,18 +65,17 @@ couple_species = [(specie_1, specie_2) for specie_1 in common_species_list
                   for specie_2 in common_species_list if specie_2 > specie_1]
 
 
-nb_thread = 1
-for i in xrange(mp.cpu_count(), 0, -1):
-    if len(couple_species) % i == 0:
-        nb_thread = i
-        break
+if mp.cpu_count() > len(couple_species):
+    nb_thread = len(couple_species)
+else:
+    nb_thread = mp.cpu_count()
 
-couple_species_splitted = np.split(np.array(couple_species), nb_thread)
+couple_species_splitted = np.array_split(np.array(couple_species), nb_thread)
 
-print("Starting multiprocessing with {} threads.".format(nb_thread))
+logging.info("Starting multiprocessing with {} threads.".format(nb_thread))
 args = [steady_state_densities, None, local_comm_species]
 results = multiprocess.apply_async_with_callback(mcm.p_value_spearman, args, couple_species_splitted, 1, nb_thread)
-print("Multiprocessing computations done.")
+logging.info("Multiprocessing computations done.")
 
 p_value_spearman_list = []
 spearman_rho_list = []
@@ -119,7 +125,9 @@ specificity = nb_true_neg / (nb_true_neg + nb_false_pos)
 
 prompt = "Number of true positive: {}\nTrue negative: {}\nFalse positive: {}\nFalse negative: {}"
 prompt += "\nSensitivity: {}\nSpecificity: {}"
-print(prompt.format(nb_true_pos, nb_true_neg, nb_false_pos, nb_false_neg, sensitivity, specificity))
+logging.info(prompt.format(nb_true_pos, nb_true_neg, nb_false_pos, nb_false_neg, sensitivity, specificity))
+
+logging.info("Elapsed time: {}".format(time.time() - start_time))
 
 plt.imshow(A_ER)
 plt.colorbar()
