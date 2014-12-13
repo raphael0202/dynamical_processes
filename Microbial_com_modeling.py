@@ -59,7 +59,7 @@ def steady_state_check(population_density, epsilon=0.5, time_range_percent=10):
 
 
 def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A,
-                               k_even, r, t_max=2000., t_min=0, ts=1., mxstep=1000):
+                               k, r, t_max=4000., t_min=0, ts=1., mxstep=1000):
 
     t = np.arange(t_min, t_max, ts)
     x = np.zeros((nb_local_community, M, len(t)))
@@ -68,14 +68,21 @@ def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A
 
         # We get the interaction matrix with only species present in the local population
 
-        A = A[:, local_comm_species[local_community_index, :]]  # First the columns
-        A = A[local_comm_species[local_community_index, :], :]  # Then the lines
+        A_reduced = A[:, local_comm_species[local_community_index, :]]  # First the columns
+        A_reduced = A_reduced[local_comm_species[local_community_index, :], :]  # Then the lines
 
-        x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A, k_even, r),
+        x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A_reduced, k, r),
                                           mxstep=mxstep).transpose()
 
-        if not steady_state_check(x[local_community_index]):
-            raise ValueError("One of the population has not reach a steady-value, increase the maximum time.")
+        nb_integration = 0
+        while not steady_state_check(x[local_community_index]):
+            x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A_reduced, k, r),
+                                              mxstep=mxstep).transpose()
+
+            nb_integration += 1
+
+            if nb_integration > 10:
+                raise ValueError("One of the population has not reach a steady-value, increase the maximum time.")
 
     steady_state_densities = x[:, :, -1]
 
@@ -88,7 +95,6 @@ def p_value_spearman(steady_state_densities, couple_species, local_comm_species,
     spearman_rho = np.zeros(len(couple_species))
 
     for index, (specie_1, specie_2) in enumerate(couple_species):
-        logging.debug("{}/{}".format(index, len(couple_species)))
 
         ## Computation of Spearman coefficient for all pairs
 

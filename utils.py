@@ -63,10 +63,12 @@ def start_logging(logger_level="DEBUG", file_handler_level="INFO", steam_handler
     return logger
 
 
-def save_json(data, filename):
-    if not os.path.isdir("data"):
-        os.mkdir("data")
+def save_json(data, filename, directory="data"):
+    if not os.path.isdir(directory):
+        os.mkdir(directory)
 
-    with open("data/{}.json".format(filename), 'w') as fp:
+    with open("{}/{}.json".format(directory, filename), 'w') as fp:
         logging.info("Saving JSON file: {}".format(filename))
         json.dump(data, fp)
+
+
