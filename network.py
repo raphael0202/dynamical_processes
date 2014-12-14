@@ -51,13 +51,19 @@ class ER() :
 
 class WS() :
 
-	def __init__(self,n,k,p):
+	def __init__(self,n,k,p, M=None):
 		""" Initialize parameters of graph """
 		self.n = n
 		self.k = k
 		self.p = p
 		self.G = nx.Graph()
-		self.construct_graph()
+		self.M = M
+		if M!=None : self.construct_from_matrice()
+		else : self.construct_graph()
+
+	def construct_from_matrice(self):
+		""" Construct nodes and edges of the graph"""
+		self.G = nx.from_numpy_matrix(self.M)
 
 	def construct_graph(self):
 		""" Construct nodes and edges of the graph"""
