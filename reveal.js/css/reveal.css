@@ -663,7 +663,7 @@ body {
  * DEFAULT TRANSITION
  *********************************************/
 
-.reveal .slides>section[data-transition=default].past,
+.reveal .slides>section[data-transition=none].past,
 .reveal .slides>section.past {
 	display: block;
 	opacity: 0;
