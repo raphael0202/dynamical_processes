@@ -12,19 +12,19 @@ from compgraph import *
 #--VARIABLES-----#
 
 # Nombre d'espèces :
-N = 10
+N = 250
 # Nombre de communautés :
-N_communities = 3
+N_communities = 100
 # Nombre d'espèce par communauté :
-N_species_local = 5
+N_species_local = 100
 # Fraction d'espèce partagée d'une communauté à l'autre :
 F_shared = 0.8
 # Nombre d'espèce partagée en fonction de la fraction définie :
-N_shared_species = int(N_species_local * F_shared)
+N_shared_species = int(round(N_species_local * F_shared))
 #Nombre de ré-échantillonage :
-N_resampling = 100
+N_resampling = 1000
 # Seuil de significativité :
-alpha = 0.1
+alpha = 0.05
 
 # Vecteur des taux de croissance ]0,1] :
 R = np.random.uniform(0,1,N) 
@@ -49,17 +49,23 @@ X = np.random.uniform(10,100,N)
 
 k = int(0.3 * N )
 p = 0.2
+
 G = WS(N,k,p)
 
 # Matrice d'interaction :
 A = np.multiply( G.adjacency_matrix() , np.around(np.random.uniform(-1,1,(N,N)),2) )
 np.fill_diagonal(A, 1)
 A[A == -0.] = 0.
-print "A =\n", A
+
+for i in range(N) :
+	for j in range(i+1,N) :
+		l = random.sample([j,i],2)
+		A[l[0],l[1]] = 0
+
 G = WS(N,k,p,A)
 
 # Affiche le graphe :
-G.show()
+#G.show()
 
 #--ECHANTILLONAGE-----#
 
@@ -67,16 +73,12 @@ v_shared_species = np.append(np.ones(N_shared_species),np.zeros(N - N_shared_spe
 np.random.shuffle( v_shared_species )
 i = filter(lambda x : v_shared_species[x]!=1, xrange(len(v_shared_species)))
 
-print 'Espèces partagées =', v_shared_species
-
 # Matrice des espèces présentent dans chaque communautés :
 M = np.zeros( (N_communities, N) )
 for community in xrange(N_communities) :
 	s = random.sample(i, N_species_local - N_shared_species)
 	M[community,] = v_shared_species
 	M[community,][s] = 1
-
-print "M = \n", M
 
 #--DYNAMIQUE-----#
 
@@ -105,7 +107,6 @@ for community in xrange(N_communities) :
 	#pypl.plot(t,X_community)
 	#pypl.show()
 
-print "D = \n", D
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~		
 def cprint(label) : 
 	""" Fonction d'affichage dynamique en console """
@@ -134,18 +135,19 @@ for i, pair in enumerate(C) :
 	for i in xrange(N_resampling) : 
 		random.shuffle(density_spec1)
 		rho_null[i] = stats.spearmanr(density_spec1 , density_spec2)[0]
-	print " distri_null = ", rho_null
-	print " rho = ", rho
-	pvalue = len(rho_null[np.where(rho_null >= rho)]) / float(N_resampling) ##
-	print " pval = ", pvalue
-	if 1- pvalue <= alpha : Mcc[pair[0],pair[1]] = Mcc[pair[1],pair[0]] = rho
+
+	l = len(rho_null[np.where(rho_null < rho)])  / float(N_resampling)
+	r = len(rho_null[np.where(rho_null >= rho)]) / float(N_resampling)
+	pvalue = 2 * min(l, r) #len(rho_null[np.where(rho_null >= rho)]) / float(N_resampling) ##
+	if pvalue <= alpha : Mcc[pair[0],pair[1]] = rho
 
 print "# GRAPHE CO-OCCURENCE"
 # Graphe de co-occurence :
 Acc[Mcc != 0 ] = 1
-print "Acc = \n", Acc
+Acc = Acc[np.where(v_shared_species > 0)][:,np.where(v_shared_species > 0)[0].tolist()]
 Gcc = CoNet(Acc)
-Gcc.show()
+print Gcc.G.edges(data=True)
+#Gcc.show()
 
 Comp = CompGraph(G.G,Gcc.G)
 sensibilite , specificite = Comp.comparaison()

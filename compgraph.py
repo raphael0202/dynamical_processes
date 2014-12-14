@@ -12,17 +12,14 @@ class CompGraph():
 
 	def comparaison(self) :
 		
-		TN = TP = FN = FP = Both = 0.
+		TN = TP = FN = FP = 0.
 		# Liens possible dans C :
 		L = list(itertools.combinations(self.C.nodes() ,2))
 		for l in L :
-			if self.C.has_edge(*l) and self.I.has_edge(*l): 
-				if self.sign(*l) : TP +=1
-				else : Both += 1
+			if self.C.has_edge(*l) and self.I.has_edge(*l) and self.sign(*l) : TP +=1
 			if self.C.has_edge(*l) and not self.I.has_edge(*l) : FP +=1
 			if not self.C.has_edge(*l) and not self.I.has_edge(*l) : TN +=1
-		FN = len(self.I.edges()) - Both
-
+			if not self.C.has_edge(*l) and self.I.has_edge(*l) : FN +=1
 		return TP / (TP + FN) , TN / (TN + FP)
 
 	def sign(self,v1,v2):
