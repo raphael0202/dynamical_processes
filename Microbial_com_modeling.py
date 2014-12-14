@@ -5,12 +5,49 @@ import scipy.stats as stats
 from scipy.integrate import odeint
 import numpy as np
 import random
+import graph
 import seaborn as sns
 import statsmodels
 import logging
 
 sns.set_style("white")
 sns.set(font="Liberation Sans")
+
+
+class IntegrationError(Exception):
+    pass
+
+
+class SteadyStateError(Exception):
+    pass
+
+
+def generate_parameters(N, M, nb_local_community, p, carrying_capacity_b, graph_model):
+
+    r = stats.uniform.rvs(loc=0, scale=1, size=M)  # growth rate, uniform distribution between 0 and 1, vector of size M
+    while np.any(r == 0.):
+        for index, value in enumerate(r):
+            if value == 0.:
+                r[index] = stats.uniform.rvs(loc=0, scale=1)
+
+    # k: carrying capacity
+    k = stats.beta.rvs(a=1, b=carrying_capacity_b, loc=0, scale=1, size=M)
+
+    # Scaling of carrying capacity k between 1 and 100
+    k = 1. + k * 100
+
+    # Interaction matrix A
+    ## Random Erdös-Renyi model
+
+    if graph_model == "ER":
+        A = graph.generate_random_graph(N, p)
+    else:
+        raise ValueError("Unknown graph model.")
+
+    # Initial abundance of species x_0
+    x_0 = stats.uniform.rvs(loc=10, scale=90, size=(nb_local_community, M))  # Uniform distribution between 10 and 100
+
+    return r, k, A, x_0
 
 
 def subsample_local_pop(total_nb_species, nb_species, nb_local_community, nb_common_species):
@@ -59,7 +96,7 @@ def steady_state_check(population_density, epsilon=0.5, time_range_percent=10):
 
 
 def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A,
-                               k, r, t_max=4000., t_min=0, ts=1., mxstep=1000):
+                               k, r, t_max=4000., t_min=0, ts=1., mxstep=1000, t_max_mult=1.3):
 
     t = np.arange(t_min, t_max, ts)
     x = np.zeros((nb_local_community, M, len(t)))
@@ -76,14 +113,24 @@ def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A
 
         nb_integration = 0
         while not steady_state_check(x[local_community_index]):
+
+            t_max *= t_max_mult
+            logging.info("Steady state not reached, increased t_max to {} (factor {})".format(
+                t_max, t_max_mult))
+
+            x = np.zeros((nb_local_community, M, len(t)))
+
+            t = np.arange(t_min, t_max, ts)
             x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A_reduced, k, r),
                                               mxstep=mxstep).transpose()
 
             nb_integration += 1
 
             if nb_integration > 10:
-                raise ValueError("One of the population has not reach a steady-value, increase the maximum time.")
+                logging.info("Steady state not reached after multiple attempts. Final t_max = {}".format(t_max))
+                raise SteadyStateError("One of the population has not reach a steady-value.")
 
+    logging.info("Integration successful!")
     steady_state_densities = x[:, :, -1]
 
     return steady_state_densities

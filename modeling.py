@@ -1,52 +1,88 @@
 # -*- coding: utf8 -*-
 
 from __future__ import division
-import graph
 import Microbial_com_modeling as mcm
+from Microbial_com_modeling import IntegrationError
 import multiprocess
 import numpy as np
-import scipy.stats as stats
 import statsmodels
 import multiprocessing as mp
 import time
 import logging
 from utils import start_logging, save_json
 import json
-import matplotlib.pyplot as plt
-import seaborn as sns
+import os
+# import matplotlib.pyplot as plt
+# import seaborn as sns
 
 logger = start_logging()
 old_settings = np.seterr(all='raise')
 start_time = time.time()
 
 
-def repeat_simulation(varying_parameter, value_range):
+def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integration_attempt=5,
+                      value_range_start=0, replicate_start=0, save_directory="data"):
 
-    specificity = np.zeros(len(value_range))
-    sensitivity = np.zeros(len(value_range))
+    if not os.path.isfile("{}/{}.json".format(save_directory, varying_parameter)):
 
-    json_dict = {"parameters": None, "specificity": None, "sensitivity": None,
-                 "varying_parameter": varying_parameter, "value_range": value_range.tolist()}
+        json_dict = {"parameters": None, "specificity": None, "sensitivity": None,
+                     "varying_parameter": varying_parameter, "value_range": value_range.tolist(),
+                     "nb_replicates": nb_replicates}
 
-    save_json(json_dict, varying_parameter)
+        logging.info("Creating new file: {}.json".format(varying_parameter))
+        save_json(json_dict, varying_parameter)
+
+        specificity = np.zeros((nb_replicates, len(value_range)))
+        sensitivity = np.zeros((nb_replicates, len(value_range)))
+
+    else:
+        with open("{}/{}.json".format(save_directory, varying_parameter)) as json_file:
+            input_json = json.load(json_file)
+
+        sensitivity = input_json["sensitivity"]
+        specificity = input_json["specificity"]
 
     for i, parameter_value in enumerate(value_range):
-        specificity[i], sensitivity[i], parameters = start_simulation(**{varying_parameter: parameter_value})
 
-        if i % 3 == 0:
-            time.sleep(30)
+        if i >= value_range_start:
 
-        with open("data/{}.json".format(varying_parameter)) as json_file:
-            output = json.load(json_file)
+            for replicate in xrange(replicate_start, nb_replicates):
 
-        output["specificity"] = specificity.tolist()
-        output["sensitivity"] = sensitivity.tolist()
-        output["parameters"] = parameters
+                for integration_attempt in xrange(max_integration_attempt):
+                    logging.info("Integration attempt {}/{}".format(integration_attempt, max_integration_attempt))
+                    try:
+                        specificity[replicate, i], sensitivity[replicate, i], parameters = start_simulation(
+                            **{varying_parameter: parameter_value})
 
-        save_json(output, varying_parameter)
+                    except IntegrationError:
+                        pass
+
+                    else:
+                        break
+
+                    if integration_attempt == max_integration_attempt - 1:
+                        raise IntegrationError("The maximum number of integration attempts was reached: {}".format(
+                            max_integration_attempt))
+
+                with open("{}/{}.json".format(save_directory, varying_parameter)) as json_file:
+                    output = json.load(json_file)
+
+                output["specificity"] = specificity.tolist()
+                output["sensitivity"] = sensitivity.tolist()
+                output["parameters"] = parameters
+
+                logging.info("Saving new data in JSON file: {}".format(varying_parameter))
+                save_json(output, varying_parameter)
+
+                logging.info("Sleeping for 60 seconds...")
+                time.sleep(60)
 
 
 def start_simulation(**kwargs):
+
+    if len(kwargs) == 1:
+        logging.info("Starting new simulation with varying parameter: {}, value: {}".format(kwargs.keys()[0],
+                                                                                            kwargs[kwargs.keys()[0]]))
 
     N = 200  # Number of distinct species
     M = 100  # number of distinct species in the local community (M < N)
@@ -73,47 +109,27 @@ def start_simulation(**kwargs):
         elif arg == "graph_model":
             graph_model = value
         else:
-            raise ValueError("Unknown argument: {}".format(arg))
+            raise NameError("Unknown argument: {}".format(arg))
 
     NB_COMMON_SPECIES = int(FRACTION_SHARED * M)
 
-    r = stats.uniform.rvs(loc=0, scale=1, size=M)  # growth rate, uniform distribution between 0 and 1, vector of size M
-    while np.any(r == 0.):
-        for index, value in enumerate(r):
-            if value == 0.:
-                r[index] = stats.uniform.rvs(loc=0, scale=1)
-
-    # k: carrying capacity
-    k = stats.beta.rvs(a=1, b=carrying_capacity_b, loc=0, scale=1, size=M)
-
-    # Scaling of carrying capacity k between 1 and 100
-    k = 1. + k * 100
-
-    # Interaction matrix A
-    ## Random Erdös-Renyi model
-
-    if graph_model == "ER":
-        A = graph.generate_random_graph(N, p)
+    r, k, A, x_0 = mcm.generate_parameters(N, M, NB_LOCAL_COMMUNITY, p, carrying_capacity_b, graph_model)
 
     local_comm_species, common_species_list = mcm.subsample_local_pop(N, M, NB_LOCAL_COMMUNITY, NB_COMMON_SPECIES)
 
-    # Initial abundance of species x_0
-    x_0 = stats.uniform.rvs(loc=10, scale=90, size=(NB_LOCAL_COMMUNITY, M))  # Uniform distribution between 10 and 100
     steady_state_densities = mcm.get_steady_state_densities(NB_LOCAL_COMMUNITY, M, local_comm_species, x_0, A, k, r,
-                                                            t_max=5000., t_min=0, ts=1.)
+                                                                t_max=5000., t_min=0, ts=1.)
 
-
-    # ### Computation of the correlation coefficient (Spearman rho here)
+    ### Computation of the correlation coefficient (Spearman rho here)
 
     ## list of all the possible couple of species present in the local communities
     couple_species = [(specie_1, specie_2) for specie_1 in common_species_list
                       for specie_2 in common_species_list if specie_2 > specie_1]
 
-
     if mp.cpu_count() > len(couple_species):
         nb_thread = len(couple_species)
     else:
-        nb_thread = mp.cpu_count()
+        nb_thread = mp.cpu_count() - 1
 
     couple_species_splitted = np.array_split(np.array(couple_species), nb_thread)
 
@@ -128,7 +144,6 @@ def start_simulation(**kwargs):
     for index, result in enumerate(results):
         p_value_spearman_list += list(result[0])
         spearman_rho_list += list(result[1])
-
 
     ## Computation of the correction for multiple comparison
     rejects, p_value_corrected, _, __ = statsmodels.sandbox.stats.multicomp.multipletests(p_value_spearman_list,
@@ -167,9 +182,8 @@ def start_simulation(**kwargs):
     sensitivity = nb_true_pos / (nb_true_pos + nb_false_neg)
     specificity = nb_true_neg / (nb_true_neg + nb_false_pos)
 
-    prompt = "Number of true positive: {}\nTrue negative: {}\nFalse positive: {}\nFalse negative: {}"
-    prompt += "\nSensitivity: {}\nSpecificity: {}"
-    logging.info(prompt.format(nb_true_pos, nb_true_neg, nb_false_pos, nb_false_neg, sensitivity, specificity))
+    prompt = "Sensitivity: {}, Specificity: {}"
+    logging.info(prompt.format(sensitivity, specificity))
     logging.info("Elapsed time: {}".format(time.time() - start_time))
 
     saved_data = {}
@@ -190,7 +204,7 @@ def start_simulation(**kwargs):
     # plt.imshow(co_occurrence_matrix)
     # plt.savefig("co_occurrence.svg")
 
-    ## Save of important variables
+    ## Saving important variables
 
     # np.save("densities", steady_state_densities)
     # np.save("A_ER", A_ER)
