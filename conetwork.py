@@ -15,7 +15,7 @@ class CoNet():
 	
     def show(self):
         """ Plot the graph"""
-        nx.draw(self.G)
+        nx.draw_circular(self.G)
         plt.draw()
         plt.show()
 

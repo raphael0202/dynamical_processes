@@ -12,17 +12,17 @@ from compgraph import *
 #--VARIABLES-----#
 
 # Nombre d'espèces :
-N = 100
+N = 250
 # Nombre de communautés :
-N_communities = 5
+N_communities = 100
 # Nombre d'espèce par communauté :
-N_species_local = 50
+N_species_local = 100
 # Fraction d'espèce partagée d'une communauté à l'autre :
 F_shared = 0.8
 # Nombre d'espèce partagée en fonction de la fraction définie :
-N_shared_species = int(N_species_local * F_shared)
+N_shared_species = int(round(N_species_local * F_shared))
 #Nombre de ré-échantillonage :
-N_resampling = 100
+N_resampling = 1000
 # Seuil de significativité :
 alpha = 0.05
 
@@ -47,13 +47,22 @@ X = np.random.uniform(10,100,N)
 # B: 0 <= B <= 1
 # L: Nombre de liens dans le graphe
 
-k = int(0.2 * N )
-p = 0.1
+k = int(0.3 * N )
+p = 0.2
+
 G = WS(N,k,p)
 
 # Matrice d'interaction :
 A = np.multiply( G.adjacency_matrix() , np.around(np.random.uniform(-1,1,(N,N)),2) )
 np.fill_diagonal(A, 1)
+A[A == -0.] = 0.
+
+for i in range(N) :
+	for j in range(i+1,N) :
+		l = random.sample([j,i],2)
+		A[l[0],l[1]] = 0
+
+G = WS(N,k,p,A)
 
 # Affiche le graphe :
 #G.show()
@@ -126,19 +135,24 @@ for i, pair in enumerate(C) :
 	for i in xrange(N_resampling) : 
 		random.shuffle(density_spec1)
 		rho_null[i] = stats.spearmanr(density_spec1 , density_spec2)[0]
-	pvalue = len(rho_null[np.where(rho_null >= rho)]) / float(N_resampling) ##
-	if pvalue <= alpha : Mcc[pair[0],pair[1]] = Mcc[pair[1],pair[0]] = rho
+
+	l = len(rho_null[np.where(rho_null < rho)])  / float(N_resampling)
+	r = len(rho_null[np.where(rho_null >= rho)]) / float(N_resampling)
+	pvalue = 2 * min(l, r) #len(rho_null[np.where(rho_null >= rho)]) / float(N_resampling) ##
+	if pvalue <= alpha : Mcc[pair[0],pair[1]] = rho
 
 print "# GRAPHE CO-OCCURENCE"
 # Graphe de co-occurence :
 Acc[Mcc != 0 ] = 1
-print "Acc = \n", Acc
+Acc = Acc[np.where(v_shared_species > 0)][:,np.where(v_shared_species > 0)[0].tolist()]
 Gcc = CoNet(Acc)
+print Gcc.G.edges(data=True)
 #Gcc.show()
 
 Comp = CompGraph(G.G,Gcc.G)
 sensibilite , specificite = Comp.comparaison()
-print sensibilite , specificite
+print "Sensi = ", sensibilite
+print "Speci = ", specificite
 
 #### Association metrics ####
 

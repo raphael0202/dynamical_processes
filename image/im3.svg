@@ -10,12 +10,12 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="1000"
+   width="900"
    height="600"
    id="svg5359"
    version="1.1"
    inkscape:version="0.48.3.1 r9886"
-   sodipodi:docname="im2.svg">
+   sodipodi:docname="im3.svg">
   <defs
      id="defs5361">
     <marker
@@ -302,9 +302,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.35"
-     inkscape:cx="597.21608"
-     inkscape:cy="520"
+     inkscape:zoom="0.7"
+     inkscape:cx="377.96059"
+     inkscape:cy="304.95099"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -321,7 +321,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -332,7 +332,7 @@
      transform="translate(0,-452.36218)">
     <g
        id="g8868"
-       transform="matrix(0.63956712,0,0,0.63956712,315.4392,234.62936)">
+       transform="matrix(0.59432755,0,0,0.63956712,278.49405,234.62936)">
       <g
          transform="translate(-463.47649,-710.49636)"
          id="g22787">
