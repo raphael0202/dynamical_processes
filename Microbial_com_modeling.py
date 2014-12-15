@@ -9,6 +9,7 @@ import graph
 import seaborn as sns
 import statsmodels
 import logging
+import network
 
 sns.set_style("white")
 sns.set(font="Liberation Sans")
@@ -41,6 +42,8 @@ def generate_parameters(N, M, nb_local_community, p, carrying_capacity_b, graph_
 
     if graph_model == "ER":
         A = graph.generate_random_graph(N, p)
+    elif graph_model == "WS":
+        A = network.WS(N, p*(N-1), p)
     else:
         raise ValueError("Unknown graph model.")
 
@@ -68,7 +71,8 @@ def subsample_local_pop(total_nb_species, nb_species, nb_local_community, nb_com
                          x not in common_species_list]  # List of species that have not be chosen yet
 
     for comm in xrange(nb_local_community):
-        local_comm_species[comm, nb_common_species:nb_species] = random.sample(remaining_species, nb_species - nb_common_species)
+        local_comm_species[comm, nb_common_species:nb_species] = random.sample(
+            remaining_species, nb_species - nb_common_species)
         # We sample the rest of the species for each local community
 
     return local_comm_species, common_species_list
@@ -89,7 +93,8 @@ def steady_state_check(population_density, epsilon=0.5, time_range_percent=10):
         steady_state_value = population_density_reduced[specie, -1]
         steady_state_range = np.array([steady_state_value - epsilon, steady_state_value + epsilon])
 
-        if np.any(population_density_reduced[specie] < steady_state_range[0]) or np.any(population_density_reduced[specie] > steady_state_range[1]):
+        if np.any(population_density_reduced[specie] < steady_state_range[0]) or np.any(
+                population_density_reduced[specie] > steady_state_range[1]):
             return False  # The population "specie" is not in the acceptable range of value for a steady-state
 
     return True
@@ -108,26 +113,34 @@ def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A
         A_reduced = A[:, local_comm_species[local_community_index, :]]  # First the columns
         A_reduced = A_reduced[local_comm_species[local_community_index, :], :]  # Then the lines
 
-        x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A_reduced, k, r),
-                                          mxstep=mxstep).transpose()
+        integration_result, info_dict = odeint(derivative, x_0[local_community_index], t, args=(A_reduced, k, r),
+                                               mxstep=mxstep, full_output=True)
+
+        x[local_community_index] = integration_result.transpose()
+        logging.debug(info_dict["message"])
+        if info_dict["message"] != 'Integration successful.':
+            raise IntegrationError(info_dict["message"])
 
         nb_integration = 0
         while not steady_state_check(x[local_community_index]):
 
             t_max *= t_max_mult
-            logging.info("Steady state not reached, increased t_max to {} (factor {})".format(
+            logging.warning("Steady state not reached, increased t_max to {} (factor {})".format(
                 t_max, t_max_mult))
 
             t = np.arange(t_min, t_max, ts)
             x = np.zeros((nb_local_community, M, len(t)))
 
-            x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A_reduced, k, r),
-                                              mxstep=mxstep).transpose()
+            integration_result, info_dict = odeint(derivative, x_0[local_community_index], t,
+                                                   args=(A_reduced, k, r), mxstep=mxstep, full_output=True)
+
+            x[local_community_index] = integration_result.transpose()
+            logging.debug(info_dict)
 
             nb_integration += 1
 
             if nb_integration > 10:
-                logging.info("Steady state not reached after multiple attempts. Final t_max = {}".format(t_max))
+                logging.error("Steady state not reached after multiple attempts. Final t_max = {}".format(t_max))
                 raise SteadyStateError("One of the population has not reach a steady-value.")
 
     logging.info("Integration successful!")

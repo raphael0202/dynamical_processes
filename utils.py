@@ -6,7 +6,7 @@ import json
 import os
 
 
-def start_logging(logger_level="DEBUG", file_handler_level="INFO", steam_handler_level="DEBUG", log_file=False):
+def start_logging(logger_level="DEBUG", file_handler_level="INFO", steam_handler_level="INFO", log_file=False):
     # création de l'objet logger qui va nous servir à écrire dans les logs
     logger = logging.getLogger()
     # on met le niveau du logger à DEBUG, comme ça il écrit tout

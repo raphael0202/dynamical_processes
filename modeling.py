@@ -29,12 +29,23 @@ def draw_plot(directory, fname):
 
     value_range = np.array(data["value_range"])
 
-    sns.tsplot(sensitivity, time=value_range)
-    plt.show()
+    ax = sns.tsplot(sensitivity, time=value_range, err_style="unit_points")
+    ax.set_xlabel("Number of samples")
+    ax.set_ylabel("Sensitivity")
+    plt.savefig("{}/{}_sensitivity.svg".format(directory, fname))
+    plt.clf()
+
+    ax2 = sns.tsplot(specificity, time=value_range, err_style="unit_points")
+    ax2.set_xlabel("Number of samples")
+    ax2.set_ylabel("Specificity")
+    plt.savefig("{}/{}_specificity.svg".format(directory, fname))
+    plt.clf()
 
 
-def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integration_attempt=5,
-                      value_range_start=0, replicate_start=0, save_directory="data"):
+def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integration_attempt=8,
+                      value_range_start=0, save_directory="data"):
+
+    spleeping_time = 30
 
     if not os.path.isfile("{}/{}.json".format(save_directory, varying_parameter)):
 
@@ -56,20 +67,21 @@ def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integ
         specificity = np.array(input_json["specificity"])
 
     for i, parameter_value in enumerate(value_range):
-
         if i >= value_range_start:
-            logging.info("Starting new simulation with varying parameter: {}, value: {}".format(varying_parameter,
-                                                                                                parameter_value))
+            for replicate in xrange(nb_replicates):
 
-            for replicate in xrange(replicate_start, nb_replicates):
+                info_message = "Starting new simulation with varying parameter: {}, value: {}, replicate {}/{}".format(
+                varying_parameter, parameter_value, replicate+1, nb_replicates)
+                logging.info(info_message)
 
                 for integration_attempt in xrange(max_integration_attempt):
-                    logging.info("Integration attempt {}/{}".format(integration_attempt, max_integration_attempt))
+                    logging.info("Integration attempt {}/{}".format(integration_attempt+1, max_integration_attempt))
                     try:
                         specificity[replicate, i], sensitivity[replicate, i], parameters = start_simulation(
                             **{varying_parameter: parameter_value})
 
                     except IntegrationError:
+                        logging.warning("Integration failed. Starting over...")
                         pass
 
                     else:
@@ -93,8 +105,8 @@ def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integ
                 logging.info("Saving new data in JSON file: {}".format(varying_parameter))
                 save_json(output, varying_parameter)
 
-                logging.info("Sleeping for 45 seconds...")
-                time.sleep(45)
+                logging.info("Sleeping for {} seconds...".format(spleeping_time))
+                time.sleep(spleeping_time)
 
 
 def start_simulation(**kwargs):
@@ -241,4 +253,4 @@ def start_simulation(**kwargs):
 if __name__ == "__main__":
     varying_parameter = "NB_LOCAL_COMMUNITY"
     value_range = np.arange(10, 310, 10)
-    repeat_simulation(varying_parameter, value_range, value_range_start=16, replicate_start=1)
+    repeat_simulation(varying_parameter, value_range)
