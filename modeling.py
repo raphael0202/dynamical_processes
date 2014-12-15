@@ -21,6 +21,9 @@ start_time = time.time()
 
 
 def draw_plot(directory, fname):
+
+    sns.set_context("talk")
+
     with open("{}/{}.json".format(directory, fname)) as json_file:
         data = json.load(json_file)
 
@@ -32,12 +35,14 @@ def draw_plot(directory, fname):
     ax = sns.tsplot(sensitivity, time=value_range, err_style="unit_points")
     ax.set_xlabel("Number of samples")
     ax.set_ylabel("Sensitivity")
+    ax.set_ylim([0., 1.])
     plt.savefig("{}/{}_sensitivity.svg".format(directory, fname))
     plt.clf()
 
     ax2 = sns.tsplot(specificity, time=value_range, err_style="unit_points")
     ax2.set_xlabel("Number of samples")
     ax2.set_ylabel("Specificity")
+    ax2.set_ylim([0., 1.02])
     plt.savefig("{}/{}_specificity.svg".format(directory, fname))
     plt.clf()
 
@@ -253,7 +258,7 @@ def start_simulation(**kwargs):
 if __name__ == "__main__":
     varying_parameter = "NB_LOCAL_COMMUNITY"
     value_range = np.arange(10, 310, 10)
-    repeat_simulation(varying_parameter, value_range, value_range_start=12)
+    repeat_simulation(varying_parameter, value_range, value_range_start=15)
 
     # varying_parameter = "graph_model"
     # value_range = ["ER", "WS", "B"]
