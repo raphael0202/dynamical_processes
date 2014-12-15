@@ -9,7 +9,7 @@ import graph
 import seaborn as sns
 import statsmodels
 import logging
-import network
+import networkx as nx
 
 sns.set_style("white")
 sns.set(font="Liberation Sans")
@@ -43,7 +43,7 @@ def generate_parameters(N, M, nb_local_community, p, carrying_capacity_b, graph_
     if graph_model == "ER":
         A = graph.generate_random_graph(N, p)
     elif graph_model == "WS":
-        A = network.WS(N, p*(N-1), p).adjacency_matrix()
+        A = graph.generate_watts_strogatz_graph(N, p)
     else:
         raise ValueError("Unknown graph model.")
 

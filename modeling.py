@@ -47,7 +47,31 @@ def draw_plot(directory, fname):
     plt.clf()
 
 
-def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integration_attempt=8,
+def draw_plot_graph_model(directory, fname):
+    sns.set_context("talk")
+
+    with open("{}/{}.json".format(directory, fname)) as json_file:
+        data = json.load(json_file)
+
+    sensitivity = np.array(data["sensitivity"])
+    specificity = np.array(data["specificity"])
+
+    models = data["value_range"]
+
+    ax = sns.boxplot(sensitivity, names=models)
+    ax.set_ylim([0., 1.])
+    ax.set_ylabel("Sensitivity")
+    plt.savefig("{}/{}_sensitivity.svg".format(directory, fname))
+    plt.clf()
+
+    ax2 = sns.boxplot(specificity, names=models)
+    ax2.set_ylim([0., 1.02])
+    ax2.set_ylabel("Specificity")
+    plt.savefig("{}/{}_specificity.svg".format(directory, fname))
+    plt.clf()
+
+
+def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integration_attempt=10,
                       value_range_start=0, save_directory="data"):
 
     spleeping_time = 30
@@ -55,8 +79,14 @@ def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integ
     if not os.path.isfile("{}/{}.json".format(save_directory, varying_parameter)):
 
         json_dict = {"parameters": None, "specificity": None, "sensitivity": None,
-                     "varying_parameter": varying_parameter, "value_range": value_range.tolist(),
+                     "varying_parameter": varying_parameter,
                      "nb_replicates": nb_replicates}
+
+        if isinstance(value_range, list):
+            json_dict["value_range"] = value_range
+        else:
+            json_dict["value_range"] = value_range.tolist()
+
 
         logging.info("Creating new file: {}.json".format(varying_parameter))
         save_json(json_dict, varying_parameter)
@@ -85,7 +115,7 @@ def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integ
                         specificity[replicate, i], sensitivity[replicate, i], parameters = start_simulation(
                             **{varying_parameter: parameter_value})
 
-                    except IntegrationError:
+                    except IntegrationError, SteadyStateError:
                         logging.warning("Integration failed. Starting over...")
                         pass
 
@@ -256,9 +286,12 @@ def start_simulation(**kwargs):
 
 
 if __name__ == "__main__":
-    varying_parameter = "NB_LOCAL_COMMUNITY"
-    value_range = np.arange(10, 310, 10)
-    repeat_simulation(varying_parameter, value_range, value_range_start=15)
+    # varying_parameter = "NB_LOCAL_COMMUNITY"
+    # value_range = np.arange(10, 310, 10)
+    # repeat_simulation(varying_parameter, value_range, value_range_start=15)
 
-    # varying_parameter = "graph_model"
-    # value_range = ["ER", "WS", "B"]
+    varying_parameter = "graph_model"
+    value_range = ["ER", "WS"]
+    repeat_simulation(varying_parameter, value_range, nb_replicates=5)
+
+    draw_plot_graph_model("data", "graph_model")
