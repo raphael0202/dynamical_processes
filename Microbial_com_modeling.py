@@ -43,7 +43,7 @@ def generate_parameters(N, M, nb_local_community, p, carrying_capacity_b, graph_
     if graph_model == "ER":
         A = graph.generate_random_graph(N, p)
     elif graph_model == "WS":
-        A = network.WS(N, p*(N-1), p)
+        A = network.WS(N, p*(N-1), p).adjacency_matrix()
     else:
         raise ValueError("Unknown graph model.")
 
@@ -63,8 +63,8 @@ def subsample_local_pop(total_nb_species, nb_species, nb_local_community, nb_com
     # (replace=False).
     # NB_COMMON_SPECIES: number of species to be chosen
 
-    local_comm_species = np.zeros((nb_local_community, nb_species), dtype=int)  # Matrix representing the species (in the form
-    # of integers) chosen for each local population
+    local_comm_species = np.zeros((nb_local_community, nb_species), dtype=int)  # Matrix representing the species
+    # (in the form of integers) chosen for each local population
     local_comm_species[:, 0:nb_common_species] = common_species_list
 
     remaining_species = [x for x in xrange(total_nb_species) if
