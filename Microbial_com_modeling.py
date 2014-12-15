@@ -118,9 +118,9 @@ def get_steady_state_densities(nb_local_community, M, local_comm_species, x_0, A
             logging.info("Steady state not reached, increased t_max to {} (factor {})".format(
                 t_max, t_max_mult))
 
+            t = np.arange(t_min, t_max, ts)
             x = np.zeros((nb_local_community, M, len(t)))
 
-            t = np.arange(t_min, t_max, ts)
             x[local_community_index] = odeint(derivative, x_0[local_community_index], t, args=(A_reduced, k, r),
                                               mxstep=mxstep).transpose()
 

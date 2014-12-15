@@ -12,12 +12,25 @@ import logging
 from utils import start_logging, save_json
 import json
 import os
-# import matplotlib.pyplot as plt
-# import seaborn as sns
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-logger = start_logging()
+logger = start_logging(log_file=True)
 old_settings = np.seterr(all='raise')
 start_time = time.time()
+
+
+def draw_plot(directory, fname):
+    with open("{}/{}.json".format(directory, fname)) as json_file:
+        data = json.load(json_file)
+
+    sensitivity = np.array(data["sensitivity"])
+    specificity = np.array(data["specificity"])
+
+    value_range = np.array(data["value_range"])
+
+    sns.tsplot(sensitivity, time=value_range)
+    plt.show()
 
 
 def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integration_attempt=5,
@@ -39,12 +52,14 @@ def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integ
         with open("{}/{}.json".format(save_directory, varying_parameter)) as json_file:
             input_json = json.load(json_file)
 
-        sensitivity = input_json["sensitivity"]
-        specificity = input_json["specificity"]
+        sensitivity = np.array(input_json["sensitivity"])
+        specificity = np.array(input_json["specificity"])
 
     for i, parameter_value in enumerate(value_range):
 
         if i >= value_range_start:
+            logging.info("Starting new simulation with varying parameter: {}, value: {}".format(varying_parameter,
+                                                                                                parameter_value))
 
             for replicate in xrange(replicate_start, nb_replicates):
 
@@ -61,8 +76,12 @@ def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integ
                         break
 
                     if integration_attempt == max_integration_attempt - 1:
-                        raise IntegrationError("The maximum number of integration attempts was reached: {}".format(
-                            max_integration_attempt))
+                        error_text = "The maximum number of integration attempts was reached: {}\n"
+                        error_text += "Ending program..."
+                        error_text.format(max_integration_attempt)
+
+                        logging.error(error_text)
+                        raise IntegrationError(error_text)
 
                 with open("{}/{}.json".format(save_directory, varying_parameter)) as json_file:
                     output = json.load(json_file)
@@ -74,15 +93,11 @@ def repeat_simulation(varying_parameter, value_range, nb_replicates=3, max_integ
                 logging.info("Saving new data in JSON file: {}".format(varying_parameter))
                 save_json(output, varying_parameter)
 
-                logging.info("Sleeping for 60 seconds...")
-                time.sleep(60)
+                logging.info("Sleeping for 45 seconds...")
+                time.sleep(45)
 
 
 def start_simulation(**kwargs):
-
-    if len(kwargs) == 1:
-        logging.info("Starting new simulation with varying parameter: {}, value: {}".format(kwargs.keys()[0],
-                                                                                            kwargs[kwargs.keys()[0]]))
 
     N = 200  # Number of distinct species
     M = 100  # number of distinct species in the local community (M < N)
@@ -189,8 +204,8 @@ def start_simulation(**kwargs):
     saved_data = {}
 
     parameters = {"N": N, "M": M, "NB_LOCAL_COMMUNITY": NB_LOCAL_COMMUNITY,
-                                "FRACTION_SHARED": FRACTION_SHARED, "p": p,
-                                "carrying_capacity_b": carrying_capacity_b, "graph_model": graph_model}
+                  "FRACTION_SHARED": FRACTION_SHARED, "p": p,
+                  "carrying_capacity_b": carrying_capacity_b, "graph_model": graph_model}
 
     return specificity, sensitivity, parameters
 
@@ -226,4 +241,4 @@ def start_simulation(**kwargs):
 if __name__ == "__main__":
     varying_parameter = "NB_LOCAL_COMMUNITY"
     value_range = np.arange(10, 310, 10)
-    repeat_simulation(varying_parameter, value_range)
+    repeat_simulation(varying_parameter, value_range, value_range_start=16, replicate_start=1)
