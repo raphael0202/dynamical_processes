@@ -253,4 +253,7 @@ def start_simulation(**kwargs):
 if __name__ == "__main__":
     varying_parameter = "NB_LOCAL_COMMUNITY"
     value_range = np.arange(10, 310, 10)
-    repeat_simulation(varying_parameter, value_range)
+    repeat_simulation(varying_parameter, value_range, value_range_start=12)
+
+    # varying_parameter = "graph_model"
+    # value_range = ["ER", "WS", "B"]
