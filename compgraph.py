@@ -20,7 +20,9 @@ class CompGraph():
 			if self.C.has_edge(*l) and not self.I.has_edge(*l) : FP +=1
 			if not self.C.has_edge(*l) and not self.I.has_edge(*l) : TN +=1
 			if not self.C.has_edge(*l) and self.I.has_edge(*l) : FN +=1
-		return TP / (TP + FN) , TN / (TN + FP)
+		sensi = TP / (TP + FN) if TP + FN != 0 else 0
+		speci = TN / (TN + FP) if TN + FP != 0 else 0
+		return sensi, speci
 
 	def sign(self,v1,v2):
 		return True if np.sign(self.C.get_edge_data(v1,v2)['weight']) == np.sign(self.I.get_edge_data(v1,v2)['weight']) else False
